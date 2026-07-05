@@ -1,0 +1,253 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  MASTER
+  ADMIN
+  DOCTOR
+  ASSISTANT
+  EMPLOYEE
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  ARRIVED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum BillStatus {
+  DRAFT
+  UNPAID
+  PAID
+  CANCELLED
+}
+
+enum BillItemKind {
+  SERVICE
+  ITEM
+  MATERIAL
+  OTHER
+}
+
+// ── People / employees (admin, doctor, assistant, employee) ──
+model User {
+  id           Int      @id @default(autoincrement())
+  code         String   @unique
+  name         String
+  email        String   @unique
+  password     String
+  role         Role     @default(EMPLOYEE)
+  phone        String?
+  position     String?
+  specialty    String?
+  licenseNo    String?
+  departmentId Int?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  department       Department?   @relation(fields: [departmentId], references: [id])
+  apptsAsDoctor    Appointment[] @relation("ApptDoctor")
+  apptsAsAssistant Appointment[] @relation("ApptAssistant")
+  visits           Visit[]       @relation("VisitDoctor")
+}
+
+// ── Master data ──
+model Department {
+  id        Int      @id @default(autoincrement())
+  name      String
+  note      String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  users        User[]
+  services     Service[]
+  appointments Appointment[]
+}
+
+model Unit {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  items     Item[]
+  materials Material[]
+}
+
+model ItemCategory {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  items Item[]
+}
+
+model PaymentMethod {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  bills Bill[]
+}
+
+model Room {
+  id           Int           @id @default(autoincrement())
+  name         String
+  note         String?
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  appointments Appointment[]
+}
+
+// รายการบริการ/ค่ารักษา (service master)
+model Service {
+  id           Int      @id @default(autoincrement())
+  code         String   @unique
+  name         String
+  price        Float    @default(0)
+  departmentId Int?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  department   Department?   @relation(fields: [departmentId], references: [id])
+  appointments Appointment[]
+}
+
+// ── Inventory ──
+model Item {
+  id         Int      @id @default(autoincrement())
+  code       String   @unique
+  name       String
+  categoryId Int?
+  unitId     Int?
+  price      Float    @default(0)
+  cost       Float    @default(0)
+  stockQty   Int      @default(0)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  category ItemCategory? @relation(fields: [categoryId], references: [id])
+  unit     Unit?         @relation(fields: [unitId], references: [id])
+}
+
+model Material {
+  id           Int      @id @default(autoincrement())
+  code         String   @unique
+  name         String
+  unitId       Int?
+  cost         Float    @default(0)
+  stockQty     Int      @default(0)
+  reorderLevel Int?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  unit Unit? @relation(fields: [unitId], references: [id])
+}
+
+// ── Patients ──
+model Patient {
+  id        Int       @id @default(autoincrement())
+  hn        String    @unique
+  name      String
+  gender    Gender?
+  birthdate DateTime?
+  phone     String?
+  email     String?
+  address   String?
+  bloodType String?
+  allergies String?
+  chronic   String?
+  note      String?
+  createdAt DateTime  @default(now())
+
+  appointments Appointment[]
+  visits       Visit[]
+  bills        Bill[]
+}
+
+// ── Appointment schedule ──
+model Appointment {
+  id           Int               @id @default(autoincrement())
+  patientId    Int
+  doctorId     Int?
+  assistantId  Int?
+  departmentId Int?
+  serviceId    Int?
+  roomId       Int?
+  scheduledAt  DateTime
+  endAt        DateTime?
+  status       AppointmentStatus @default(SCHEDULED)
+  note         String?
+  createdAt    DateTime          @default(now())
+
+  patient    Patient     @relation(fields: [patientId], references: [id])
+  doctor     User?       @relation("ApptDoctor", fields: [doctorId], references: [id])
+  assistant  User?       @relation("ApptAssistant", fields: [assistantId], references: [id])
+  department Department? @relation(fields: [departmentId], references: [id])
+  service    Service?    @relation(fields: [serviceId], references: [id])
+  room       Room?       @relation(fields: [roomId], references: [id])
+  visit      Visit?
+}
+
+// ── Patient report / clinical encounter ──
+model Visit {
+  id             Int      @id @default(autoincrement())
+  patientId      Int
+  appointmentId  Int?     @unique
+  doctorId       Int?
+  visitDate      DateTime @default(now())
+  chiefComplaint String?
+  diagnosis      String?
+  treatment      String?
+  note           String?
+  createdAt      DateTime @default(now())
+
+  patient     Patient      @relation(fields: [patientId], references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
+  doctor      User?        @relation("VisitDoctor", fields: [doctorId], references: [id])
+  bill        Bill?
+}
+
+// ── Billing ──
+model Bill {
+  id              Int        @id @default(autoincrement())
+  billNo          String     @unique
+  patientId       Int
+  visitId         Int?       @unique
+  date            DateTime   @default(now())
+  discount        Float      @default(0)
+  subtotal        Float      @default(0)
+  total           Float      @default(0)
+  status          BillStatus @default(UNPAID)
+  paymentMethodId Int?
+  paidAt          DateTime?
+  note            String?
+  createdAt       DateTime   @default(now())
+
+  patient       Patient        @relation(fields: [patientId], references: [id])
+  visit         Visit?         @relation(fields: [visitId], references: [id])
+  paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+  items         BillItem[]
+}
+
+model BillItem {
+  id          Int          @id @default(autoincrement())
+  billId      Int
+  kind        BillItemKind @default(OTHER)
+  refId       Int?
+  description String
+  qty         Int          @default(1)
+  unitPrice   Float        @default(0)
+  amount      Float        @default(0)
+
+  bill Bill @relation(fields: [billId], references: [id], onDelete: Cascade)
+}
