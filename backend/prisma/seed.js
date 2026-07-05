@@ -90,14 +90,14 @@ async function main() {
     data: {
       patientId: p1.id, doctorId: doctor.id, departmentId: depts['อายุรกรรม'].id,
       serviceId: svcRows[0].id, roomId: rooms['ห้องตรวจ 1'].id,
-      scheduledAt: at(10), status: 'CONFIRMED', note: 'ตรวจสุขภาพประจำปี',
+      scheduledAt: at(10), endAt: at(11), status: 'CONFIRMED', note: 'ตรวจสุขภาพประจำปี',
     },
   })
   const p2 = await prisma.patient.findFirst({ where: { hn: 'HN00002' } })
   await prisma.appointment.create({
     data: {
       patientId: p2.id, doctorId: doctor.id, roomId: rooms['ห้องหัตถการ'].id,
-      serviceId: svcRows[1].id, scheduledAt: at(11), status: 'SCHEDULED',
+      serviceId: svcRows[1].id, scheduledAt: at(11), endAt: at(11, 30), status: 'SCHEDULED',
     },
   })
 

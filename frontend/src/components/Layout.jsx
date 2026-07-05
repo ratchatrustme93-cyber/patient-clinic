@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Calendar, Users, Receipt, Stethoscope,
   Package, Boxes, Database, LogOut, HeartPulse,
@@ -20,12 +20,13 @@ const ROLE_LABEL = { MASTER: 'Master', ADMIN: 'ผู้ดูแล', DOCTOR: '
 
 export default function Layout({ children }) {
   const user = getUser()
+  const { pathname } = useLocation()
 
   return (
     <div className="flex flex-col h-screen bg-[#f6f8f9]">
       <header className="sticky top-0 z-40 bg-white border-b border-gray-100 shadow-sm">
-        {/* accent bar — soft, light */}
-        <div className="h-1 bg-gradient-to-r from-brand-200 via-brand-300 to-brand-100" />
+        {/* accent bar */}
+        <div className="h-1" style={{ background: 'linear-gradient(90deg, #14b8a6 0%, #22c55e 42%, #38bdf8 100%)' }} />
 
         <div className="max-w-[1320px] mx-auto px-5">
           {/* top row */}
@@ -84,7 +85,9 @@ export default function Layout({ children }) {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <main className="flex-1 overflow-y-auto">
+        <div key={pathname} className="page-enter h-full">{children}</div>
+      </main>
     </div>
   )
 }

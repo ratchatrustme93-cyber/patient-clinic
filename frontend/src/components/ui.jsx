@@ -23,7 +23,10 @@ export function Btn({ children, variant = 'primary', className = '', ...props })
     danger: 'text-red-500 hover:bg-red-50',
   }
   return (
-    <button {...props} className={`px-4 py-2 rounded-lg text-sm transition disabled:opacity-50 ${styles[variant]} ${className}`}>
+    <button
+      {...props}
+      className={`px-4 py-2 rounded-lg text-sm transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[.96] active:shadow-sm disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none disabled:active:scale-100 ${styles[variant]} ${className}`}
+    >
       {children}
     </button>
   )

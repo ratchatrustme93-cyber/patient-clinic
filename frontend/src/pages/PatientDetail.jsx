@@ -88,7 +88,7 @@ export default function PatientDetail() {
             {patient.appointments.map(a => (
               <div key={a.id} className="flex items-center justify-between text-sm border-b border-gray-50 last:border-0 py-1.5">
                 <span className="text-gray-800">
-                  {format(new Date(a.scheduledAt), 'd MMM yyyy HH:mm', { locale: th })}
+                  {format(new Date(a.scheduledAt), 'd MMM yyyy HH:mm', { locale: th })}{a.endAt ? `–${format(new Date(a.endAt), 'HH:mm')}` : ''}
                   <span className="text-gray-400">{a.service ? ` · ${a.service.name}` : ''}{a.doctor ? ` · ${a.doctor.name}` : ''}</span>
                 </span>
                 <Badge tone={a.status === 'COMPLETED' ? 'green' : a.status === 'CANCELLED' ? 'gray' : 'blue'}>{APPT[a.status]}</Badge>

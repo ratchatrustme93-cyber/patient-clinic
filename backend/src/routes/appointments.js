@@ -57,6 +57,7 @@ router.put('/:id', auth, async (req, res) => {
       serviceId: b.serviceId !== undefined ? num(b.serviceId) : undefined,
       roomId: b.roomId !== undefined ? num(b.roomId) : undefined,
       scheduledAt: b.scheduledAt ? new Date(b.scheduledAt) : undefined,
+      endAt: b.endAt !== undefined ? (b.endAt ? new Date(b.endAt) : null) : undefined,
       status: b.status,
       note: b.note,
     },

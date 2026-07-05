@@ -5,6 +5,20 @@
 html, body, #root {
   height: 100%;
 }
+
+/* page transition on route change */
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+.page-enter { animation: pageIn .3s cubic-bezier(.22, .61, .36, 1) both; }
+
+/* every enabled button feels clickable */
+button:not(:disabled) { cursor: pointer; }
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter { animation: none; }
+}
 body {
   margin: 0;
   font-family: 'Inter', 'Sarabun', system-ui, -apple-system, 'Segoe UI', sans-serif;

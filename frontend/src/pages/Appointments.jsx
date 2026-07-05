@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { format, addDays, subDays, isSameDay } from 'date-fns'
 import { th } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Plus, Trash2, GripVertical, DoorOpen, AlertTriangle, Clock } from 'lucide-react'
@@ -15,7 +15,8 @@ const STATUS = {
   CANCELLED: ['ยกเลิก', 'bg-gray-50 text-gray-400 border-gray-100'],
   NO_SHOW: ['ไม่มา', 'bg-red-100 text-red-500 border-red-200'],
 }
-const EMPTY = { patientId: '', doctorId: '', assistantId: '', departmentId: '', serviceId: '', roomId: '', scheduledAt: '', note: '', status: 'SCHEDULED' }
+const EMPTY = { patientId: '', doctorId: '', assistantId: '', departmentId: '', serviceId: '', roomId: '', scheduledAt: '', durationMin: 30, note: '', status: 'SCHEDULED' }
+const DURATIONS = [15, 30, 45, 60, 90, 120]
 
 // ช่วงเวลาตาราง (ตั้งค่าเองได้ · เก็บใน localStorage) ทีละ 30 นาที
 const STEP = 30
@@ -81,6 +82,7 @@ export default function Appointments() {
       patientId: a.patientId, doctorId: a.doctorId || '', assistantId: a.assistantId || '',
       departmentId: a.departmentId || '', serviceId: a.serviceId || '', roomId: a.roomId || '',
       scheduledAt: format(new Date(a.scheduledAt), "yyyy-MM-dd'T'HH:mm"),
+      durationMin: a.endAt ? Math.max(15, Math.round((new Date(a.endAt) - new Date(a.scheduledAt)) / 60000)) : 30,
       note: a.note || '', status: a.status,
     })
     setOpen(true)
@@ -93,7 +95,8 @@ export default function Appointments() {
     const c = conflictFor(form.roomId ? +form.roomId : null, when, editId)
     if (c && !warnConflict(c)) return
     setSaving(true)
-    const payload = { ...form, scheduledAt: when.toISOString() }
+    const endAt = new Date(when.getTime() + (+form.durationMin || 30) * 60000).toISOString()
+    const payload = { ...form, scheduledAt: when.toISOString(), endAt }
     try {
       if (editId) await api.put(`/appointments/${editId}`, payload)
       else await api.post('/appointments', payload)
@@ -157,7 +160,9 @@ export default function Appointments() {
       const d = new Date(date); d.setHours(slot.h, slot.m, 0, 0)
       const c = conflictFor(roomId, d, a.id)
       if (c && !warnConflict(c)) return
-      await api.put(`/appointments/${a.id}`, { scheduledAt: d.toISOString(), roomId })
+      const dur = a.endAt ? new Date(a.endAt) - new Date(a.scheduledAt) : null
+      const endAt = dur ? new Date(d.getTime() + dur).toISOString() : null
+      await api.put(`/appointments/${a.id}`, { scheduledAt: d.toISOString(), endAt, roomId })
       fetch()
     }
     window.addEventListener('pointermove', move, { passive: false })
@@ -167,16 +172,26 @@ export default function Appointments() {
 
   const columns = [...rooms.map(r => ({ id: r.id, name: r.name })), { id: null, name: 'ยังไม่จัดห้อง' }]
   const colKey = id => (id == null ? 'none' : String(id))
-  const bucket = {}
+  const colIndex = {}
+  columns.forEach((c, i) => { colIndex[colKey(c.id)] = i })
+  const inRange = []
   const outRange = []
+  const startCount = {} // conflict tint: จำนวนนัด active ที่เริ่มในช่องเดียวกัน
   appts.forEach(a => {
     const idx = idxOf(new Date(a.scheduledAt))
     if (idx < 0 || idx >= slots.length) { outRange.push(a); return }
-    const k = `${colKey(a.roomId)}-${idx}`
-    ;(bucket[k] = bucket[k] || []).push(a)
+    inRange.push(a)
+    if (a.status !== 'CANCELLED') {
+      const k = `${colKey(a.roomId)}-${idx}`
+      startCount[k] = (startCount[k] || 0) + 1
+    }
   })
 
   const formConflict = open ? conflictFor(form.roomId ? +form.roomId : null, form.scheduledAt ? new Date(form.scheduledAt) : null, editId) : null
+  const startD = form.scheduledAt ? new Date(form.scheduledAt) : null
+  const endHint = startD && !isNaN(startD)
+    ? `${format(startD, 'HH:mm')}–${format(new Date(startD.getTime() + (+form.durationMin || 30) * 60000), 'HH:mm')} น.`
+    : ''
 
   const renderAppt = a => (
     <div
@@ -184,20 +199,25 @@ export default function Appointments() {
       onPointerDown={e => onPointerDown(e, a)}
       style={{ touchAction: 'none' }}
       title="กดค้างแล้วลากเพื่อย้าย · แตะเพื่อแก้ไข"
-      className={`select-none text-xs rounded-md border px-2 py-1.5 flex items-start gap-1 ${a.status === 'CANCELLED' ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'} ${STATUS[a.status][1]} ${dragAppt?.id === a.id ? 'opacity-30' : 'hover:shadow-sm'}`}
+      className={`select-none text-[11px] rounded-md border px-1.5 py-0.5 flex items-start gap-1 ${a.status === 'CANCELLED' ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'} ${STATUS[a.status][1]} ${dragAppt?.id === a.id ? 'opacity-30' : 'hover:shadow-sm'}`}
     >
-      <GripVertical size={12} className="mt-0.5 opacity-40 flex-shrink-0" />
+      <GripVertical size={11} className="mt-0.5 opacity-40 flex-shrink-0" />
       <div className="min-w-0 leading-tight">
-        <p className="font-medium truncate">{format(new Date(a.scheduledAt), 'HH:mm')} · {a.patient.name}</p>
+        <p className="font-medium truncate">{format(new Date(a.scheduledAt), 'HH:mm')}{a.endAt ? `–${format(new Date(a.endAt), 'HH:mm')}` : ''} · {a.patient.name}</p>
         <p className="truncate opacity-70">{[a.service?.name, a.doctor?.name].filter(Boolean).join(' · ') || STATUS[a.status][0]}</p>
       </div>
     </div>
   )
 
-  const gridCols = { gridTemplateColumns: `64px repeat(${columns.length}, minmax(160px, 1fr))` }
+  // เห็นทุกช่วงเวลาในหน้าเดียว: header สูง auto, แถวเวลาแบ่งพื้นที่เท่ากันเต็มความสูง
+  const gridStyle = {
+    gridTemplateColumns: `64px repeat(${columns.length}, minmax(150px, 1fr))`,
+    gridTemplateRows: 'auto',
+    gridAutoRows: 'minmax(0, 1fr)',
+  }
 
   return (
-    <div className="p-6 mx-auto max-w-full">
+    <div className="p-6 mx-auto max-w-full h-full flex flex-col">
       <PageHeader title="ตารางนัด" subtitle="กดค้างที่การ์ดแล้วลากไปวางช่อง ห้อง × เวลา · แตะการ์ดเพื่อแก้ไข">
         <div className="flex gap-2">
           {manage && <Btn variant="ghost" onClick={() => setRoomOpen(true)}><DoorOpen size={14} className="inline mr-1" /> เพิ่มห้อง</Btn>}
@@ -236,49 +256,68 @@ export default function Appointments() {
         </Card>
       )}
 
-      {/* Room × time grid */}
-      <Card className="overflow-auto">
-        <div className="grid min-w-max" style={gridCols}>
+      {/* Room × time grid — fits one screen */}
+      <Card className="flex-1 min-h-0 overflow-auto">
+        <div className="grid min-w-max h-full" style={gridStyle}>
           {/* header */}
-          <div className="sticky top-0 left-0 z-20 bg-white border-b-2 border-r border-gray-200 px-2 py-2 text-xs text-gray-400">เวลา</div>
-          {columns.map(c => (
-            <div key={colKey(c.id)} className="sticky top-0 z-10 bg-white border-b-2 border-r border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 flex items-center gap-1.5">
+          <div style={{ gridColumn: 1, gridRow: 1 }} className="sticky top-0 left-0 z-30 bg-white border-b-2 border-r border-gray-200 px-2 py-1.5 text-xs text-gray-400">เวลา</div>
+          {columns.map((c, ci) => (
+            <div key={colKey(c.id)} style={{ gridColumn: ci + 2, gridRow: 1 }} className="sticky top-0 z-20 bg-white border-b-2 border-r border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 flex items-center gap-1.5">
               <DoorOpen size={13} className={c.id == null ? 'text-gray-300' : 'text-brand-500'} />
               <span className="truncate">{c.name}</span>
             </div>
           ))}
 
-          {/* rows */}
+          {/* time labels + empty background cells (drop targets) */}
           {slots.map((slot, idx) => {
             const onHour = slot.m === 0
             const rowBorder = onHour ? 'border-gray-200' : 'border-gray-100'
             return (
-              <div key={idx} className="contents">
-                <div className={`sticky left-0 z-10 bg-white border-b border-r border-gray-100 px-2 py-2 text-xs ${onHour ? 'text-gray-500 font-medium' : 'text-gray-300'}`}>
+              <Fragment key={idx}>
+                <div style={{ gridColumn: 1, gridRow: idx + 2 }}
+                  className={`sticky left-0 z-20 bg-white border-b border-r border-gray-100 px-2 py-1 text-xs flex items-center ${onHour ? 'text-gray-500 font-medium' : 'text-gray-300'}`}>
                   {slot.label}
                 </div>
-                {columns.map(c => {
+                {columns.map((c, ci) => {
                   const ck = colKey(c.id)
-                  const items = bucket[`${ck}-${idx}`] || []
-                  const activeCount = items.filter(a => a.status !== 'CANCELLED').length
-                  const conflict = ck !== 'none' && activeCount >= 2
+                  const conflict = ck !== 'none' && (startCount[`${ck}-${idx}`] || 0) >= 2
                   const isHover = hoverCell && hoverCell.room === ck && hoverCell.idx === idx
-                  const hoverOccupied = isHover && ck !== 'none' && items.some(a => a.status !== 'CANCELLED' && a.id !== dragAppt?.id)
                   return (
-                    <div
-                      key={ck}
-                      data-cell data-room={ck} data-idx={idx}
-                      className={`relative border-b border-r ${rowBorder} border-r-gray-100 p-1 space-y-1 min-h-[54px] transition-colors
-                        ${isHover
-                          ? (hoverOccupied ? 'bg-red-100 ring-2 ring-red-400 ring-inset' : 'bg-brand-100 ring-2 ring-brand-400 ring-inset')
-                          : conflict ? 'bg-red-50/60 ring-1 ring-red-200 ring-inset'
-                          : dragAppt ? 'bg-brand-50/50' : ''}`}
-                    >
-                      {conflict && <AlertTriangle size={12} className="absolute top-0.5 right-0.5 text-red-400 pointer-events-none" />}
-                      {items.map(a => renderAppt(a))}
-                    </div>
+                    <div key={ck} data-cell data-room={ck} data-idx={idx}
+                      style={{ gridColumn: ci + 2, gridRow: idx + 2 }}
+                      className={`border-b border-r ${rowBorder} border-r-gray-100 transition-colors
+                        ${isHover ? 'bg-brand-100 ring-2 ring-brand-400 ring-inset'
+                          : conflict ? 'bg-red-50/70 ring-1 ring-red-200 ring-inset'
+                          : dragAppt ? 'bg-brand-50/40' : ''}`} />
                   )
                 })}
+              </Fragment>
+            )
+          })}
+
+          {/* appointment blocks — span from start time to end time */}
+          {inRange.map(a => {
+            const s = new Date(a.scheduledAt)
+            const startIdx = idxOf(s)
+            const ci = colIndex[colKey(a.roomId)]
+            if (ci == null) return null
+            const durSlots = a.endAt ? Math.max(1, Math.round((new Date(a.endAt) - s) / (STEP * 60000))) : 1
+            const span = Math.min(durSlots, slots.length - startIdx)
+            const st = STATUS[a.status]
+            const timeLabel = format(s, 'HH:mm') + (a.endAt ? `–${format(new Date(a.endAt), 'HH:mm')}` : '')
+            const detail = [a.service?.name, a.doctor?.name].filter(Boolean).join(' · ') || st[0]
+            return (
+              <div key={a.id}
+                onPointerDown={e => onPointerDown(e, a)}
+                style={{ gridColumn: ci + 2, gridRow: `${startIdx + 2} / span ${span}`, touchAction: 'none', pointerEvents: dragAppt ? 'none' : 'auto', zIndex: 10 }}
+                title={`${timeLabel} · ${a.patient.name} · ${detail}`}
+                className={`relative mx-[2px] my-px rounded-md border px-1.5 py-0.5 text-[11px] leading-tight overflow-hidden select-none flex flex-col ${span >= 2 ? 'justify-start' : 'justify-center'} ${a.status === 'CANCELLED' ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'} ${st[1]} ${dragAppt?.id === a.id ? 'opacity-30' : 'hover:shadow-md'}`}
+              >
+                <p className="font-medium truncate">{timeLabel} · {a.patient.name}</p>
+                {span >= 2 && <p className="truncate opacity-70">{detail}</p>}
+                {span >= 2 && a.endAt && (
+                  <span className="absolute bottom-0.5 right-1.5 text-[10px] font-medium opacity-70 pointer-events-none">ถึง {format(new Date(a.endAt), 'HH:mm')}</span>
+                )}
               </div>
             )
           })}
@@ -343,15 +382,23 @@ export default function Appointments() {
               </select>
             </Field>
           </div>
+          <Field label="วันเวลาเริ่ม *">
+            <input type="datetime-local" required className={inputCls} value={form.scheduledAt} onChange={set('scheduledAt')} />
+          </Field>
           <div className="grid grid-cols-2 gap-3">
+            <Field label="ระยะเวลา">
+              <select className={inputCls} value={form.durationMin} onChange={set('durationMin')}>
+                {DURATIONS.map(m => <option key={m} value={m}>{m} นาที</option>)}
+              </select>
+            </Field>
             <Field label="แผนก">
               <select className={inputCls} value={form.departmentId} onChange={set('departmentId')}>
                 <option value="">ไม่ระบุ</option>
                 {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
             </Field>
-            <Field label="วันเวลา *"><input type="datetime-local" required className={inputCls} value={form.scheduledAt} onChange={set('scheduledAt')} /></Field>
           </div>
+          {endHint && <p className="text-xs text-brand-600">ช่วงเวลา {endHint}</p>}
           {formConflict && (
             <div className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 flex items-start gap-1.5">
               <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />
