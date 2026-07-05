@@ -1,4 +1,48 @@
+import { useState } from 'react'
 import { X } from 'lucide-react'
+
+// ช่องกรอกหลายค่า คั่นด้วย comma — พิมพ์ "เบาหวาน, ไขมัน, หัวใจ" → เป็นชิป · เก็บเป็น string คั่นด้วย comma
+export function TagInput({ value, onChange, placeholder = 'เช่น เบาหวาน, ไขมัน' }) {
+  const tags = (value || '').split(',').map(s => s.trim()).filter(Boolean)
+  const [input, setInput] = useState('')
+  const commit = () => {
+    const t = input.trim()
+    if (t && !tags.includes(t)) onChange([...tags, t].join(', '))
+    setInput('')
+  }
+  const remove = t => onChange(tags.filter(x => x !== t).join(', '))
+  return (
+    <div className="w-full border border-gray-200 rounded-lg px-2 py-1.5 bg-white flex flex-wrap gap-1 items-center focus-within:ring-2 focus-within:ring-brand-300 focus-within:border-brand-300">
+      {tags.map(t => (
+        <span key={t} className="inline-flex items-center gap-1 bg-brand-50 text-brand-700 rounded-full pl-2 pr-1 py-0.5 text-xs">
+          {t}
+          <button type="button" onClick={() => remove(t)} className="hover:text-red-500"><X size={12} /></button>
+        </span>
+      ))}
+      <input
+        className="flex-1 min-w-[110px] outline-none text-sm bg-transparent py-0.5"
+        value={input}
+        placeholder={tags.length ? '' : placeholder}
+        onChange={e => {
+          const v = e.target.value
+          if (v.includes(',')) {
+            const parts = v.split(',')
+            const last = parts.pop()
+            const next = [...tags]
+            parts.forEach(p => { const t = p.trim(); if (t && !next.includes(t)) next.push(t) })
+            onChange(next.join(', '))
+            setInput(last)
+          } else setInput(v)
+        }}
+        onKeyDown={e => {
+          if (e.key === 'Enter') { e.preventDefault(); commit() }
+          else if (e.key === 'Backspace' && !input && tags.length) remove(tags[tags.length - 1])
+        }}
+        onBlur={commit}
+      />
+    </div>
+  )
+}
 
 // className มาตรฐานสำหรับ input/select/textarea
 export const inputCls =

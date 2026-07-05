@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Plus, ChevronRight } from 'lucide-react'
 import api from '../lib/api'
-import { PageHeader, Btn, Modal, Field, inputCls, Empty, Badge } from '../components/ui'
+import { PageHeader, Btn, Modal, Field, inputCls, Empty, Badge, TagInput } from '../components/ui'
 
 const GENDER = { MALE: 'ชาย', FEMALE: 'หญิง', OTHER: 'อื่นๆ' }
 const EMPTY = { name: '', gender: '', birthdate: '', phone: '', email: '', address: '', bloodType: '', allergies: '', chronic: '', note: '' }
@@ -75,8 +75,8 @@ export default function Patients() {
             <Field label="กรุ๊ปเลือด"><input className={inputCls} value={form.bloodType} onChange={set('bloodType')} placeholder="A, B, O, AB" /></Field>
           </div>
           <Field label="ที่อยู่"><input className={inputCls} value={form.address} onChange={set('address')} /></Field>
-          <Field label="ประวัติแพ้ยา/สาร"><input className={inputCls} value={form.allergies} onChange={set('allergies')} /></Field>
-          <Field label="โรคประจำตัว"><input className={inputCls} value={form.chronic} onChange={set('chronic')} /></Field>
+          <Field label="ประวัติแพ้ยา/สาร (คั่นด้วย ,)"><TagInput value={form.allergies} onChange={v => setForm(p => ({ ...p, allergies: v }))} placeholder="เช่น Penicillin, Aspirin" /></Field>
+          <Field label="โรคประจำตัว (คั่นด้วย ,)"><TagInput value={form.chronic} onChange={v => setForm(p => ({ ...p, chronic: v }))} placeholder="เช่น เบาหวาน, ไขมัน, หัวใจ" /></Field>
           <div className="flex gap-2 pt-2">
             <Btn type="button" variant="ghost" className="flex-1" onClick={() => setOpen(false)}>ยกเลิก</Btn>
             <Btn type="submit" disabled={saving} className="flex-1">{saving ? 'กำลังบันทึก...' : 'บันทึก'}</Btn>

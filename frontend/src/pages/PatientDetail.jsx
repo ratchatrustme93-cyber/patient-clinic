@@ -4,7 +4,7 @@ import { format } from 'date-fns'
 import { th } from 'date-fns/locale'
 import { ArrowLeft, Pencil, Plus, FileText, Calendar, Receipt, Printer } from 'lucide-react'
 import api from '../lib/api'
-import { PageHeader, Btn, Modal, Field, inputCls, Empty, Badge, Card } from '../components/ui'
+import { PageHeader, Btn, Modal, Field, inputCls, Empty, Badge, Card, TagInput } from '../components/ui'
 
 const GENDER = { MALE: 'ชาย', FEMALE: 'หญิง', OTHER: 'อื่นๆ' }
 const APPT = { SCHEDULED: 'นัดไว้', CONFIRMED: 'ยืนยัน', ARRIVED: 'มาถึง', IN_PROGRESS: 'กำลังตรวจ', COMPLETED: 'เสร็จ', CANCELLED: 'ยกเลิก', NO_SHOW: 'ไม่มา' }
@@ -47,7 +47,7 @@ export default function PatientDetail() {
               </p>
               <div className="flex gap-1.5 mt-1">
                 {patient.bloodType && <Badge tone="blue">กรุ๊ป {patient.bloodType}</Badge>}
-                {patient.chronic && <Badge tone="amber">{patient.chronic}</Badge>}
+                {patient.chronic && patient.chronic.split(',').map(c => c.trim()).filter(Boolean).map(c => <Badge key={c} tone="amber">{c}</Badge>)}
               </div>
             </div>
           </div>
@@ -171,8 +171,8 @@ function EditModal({ patient, onClose, onSaved }) {
           <Field label="เบอร์โทร"><input className={inputCls} value={form.phone} onChange={set('phone')} /></Field>
         </div>
         <Field label="ที่อยู่"><input className={inputCls} value={form.address} onChange={set('address')} /></Field>
-        <Field label="แพ้ยา/สาร"><input className={inputCls} value={form.allergies} onChange={set('allergies')} /></Field>
-        <Field label="โรคประจำตัว"><input className={inputCls} value={form.chronic} onChange={set('chronic')} /></Field>
+        <Field label="แพ้ยา/สาร (คั่นด้วย ,)"><TagInput value={form.allergies} onChange={v => setForm(p => ({ ...p, allergies: v }))} placeholder="เช่น Penicillin, Aspirin" /></Field>
+        <Field label="โรคประจำตัว (คั่นด้วย ,)"><TagInput value={form.chronic} onChange={v => setForm(p => ({ ...p, chronic: v }))} placeholder="เช่น เบาหวาน, ไขมัน, หัวใจ" /></Field>
         <div className="flex gap-2 pt-2">
           <Btn type="button" variant="ghost" className="flex-1" onClick={onClose}>ยกเลิก</Btn>
           <Btn type="submit" disabled={saving} className="flex-1">{saving ? 'กำลังบันทึก...' : 'บันทึก'}</Btn>

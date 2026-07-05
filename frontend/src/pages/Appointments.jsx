@@ -304,7 +304,8 @@ export default function Appointments() {
             const durSlots = a.endAt ? Math.max(1, Math.round((new Date(a.endAt) - s) / (STEP * 60000))) : 1
             const span = Math.min(durSlots, slots.length - startIdx)
             const st = STATUS[a.status]
-            const timeLabel = format(s, 'HH:mm') + (a.endAt ? `–${format(new Date(a.endAt), 'HH:mm')}` : '')
+            const end = a.endAt ? new Date(a.endAt) : null
+            const timeLabel = format(s, 'HH:mm') + (end ? `–${format(end, 'HH:mm')}` : '')
             const detail = [a.service?.name, a.doctor?.name].filter(Boolean).join(' · ') || st[0]
             return (
               <div key={a.id}
@@ -313,10 +314,17 @@ export default function Appointments() {
                 title={`${timeLabel} · ${a.patient.name} · ${detail}`}
                 className={`relative mx-[2px] my-px rounded-md border px-1.5 py-0.5 text-[11px] leading-tight overflow-hidden select-none flex flex-col ${span >= 2 ? 'justify-start' : 'justify-center'} ${a.status === 'CANCELLED' ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'} ${st[1]} ${dragAppt?.id === a.id ? 'opacity-30' : 'hover:shadow-md'}`}
               >
-                <p className="font-medium truncate">{timeLabel} · {a.patient.name}</p>
-                {span >= 2 && <p className="truncate opacity-70">{detail}</p>}
-                {span >= 2 && a.endAt && (
-                  <span className="absolute bottom-0.5 right-1.5 text-[10px] font-medium opacity-70 pointer-events-none">ถึง {format(new Date(a.endAt), 'HH:mm')}</span>
+                {span >= 2 ? (
+                  <>
+                    <p className="font-medium truncate">{timeLabel} · {a.patient.name}</p>
+                    <p className="truncate opacity-70">{detail}</p>
+                    {end && <span className="absolute bottom-0.5 right-1.5 text-[10px] font-medium opacity-70 pointer-events-none">ถึง {format(end, 'HH:mm')}</span>}
+                  </>
+                ) : (
+                  <div className="flex items-center gap-1 min-w-0">
+                    <span className="font-medium truncate">{format(s, 'HH:mm')} · {a.patient.name}</span>
+                    {end && <span className="ml-auto flex-shrink-0 font-medium opacity-70">ถึง {format(end, 'HH:mm')}</span>}
+                  </div>
                 )}
               </div>
             )
