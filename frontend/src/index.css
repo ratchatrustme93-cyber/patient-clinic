@@ -28,8 +28,15 @@ button:not(:disabled) { cursor: pointer; }
 .modal-backdrop { animation: backdropIn .15s ease-out both; }
 .modal-panel { animation: modalIn .22s cubic-bezier(.22, .61, .36, 1) both; }
 
+/* tab switch */
+@keyframes tabIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+.tab-enter { animation: tabIn .25s cubic-bezier(.22, .61, .36, 1) both; }
+
 @media (prefers-reduced-motion: reduce) {
-  .page-enter, .modal-backdrop, .modal-panel { animation: none; }
+  .page-enter, .modal-backdrop, .modal-panel, .tab-enter { animation: none; }
 }
 body {
   margin: 0;

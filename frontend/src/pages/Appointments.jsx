@@ -29,6 +29,7 @@ const readMin = (key, def) => { const v = parseInt(localStorage.getItem(key), 10
 export default function Appointments() {
   const manage = canManage()
   const [date, setDate] = useState(new Date())
+  const [now, setNow] = useState(new Date())
   const [appts, setAppts] = useState([])
   const [rooms, setRooms] = useState([])
   const [patients, setPatients] = useState([])
@@ -55,6 +56,11 @@ export default function Appointments() {
   const slots = []
   for (let t = startMin; t <= endMin; t += STEP) slots.push({ h: Math.floor(t / 60), m: t % 60, label: minToLabel(t) })
   const idxOf = when => Math.floor((when.getHours() * 60 + when.getMinutes() - startMin) / STEP)
+  // ตำแหน่งเส้นเวลาปัจจุบัน (แสดงเฉพาะวันนี้ และอยู่ในช่วงตาราง)
+  const nowIdxFloat = (now.getHours() * 60 + now.getMinutes() - startMin) / STEP
+  const nowRow = Math.floor(nowIdxFloat)
+  const showNow = isSameDay(date, now) && nowIdxFloat >= 0 && nowRow < slots.length
+  const nowFrac = nowIdxFloat - nowRow
   function setRange(field, timeStr) {
     let min = timeToMin(timeStr)
     if (field === 'start') { min = Math.min(min, endMin - STEP); setStartMin(min); localStorage.setItem('pc.sched.start', min) }
@@ -66,6 +72,7 @@ export default function Appointments() {
   const fetch = () => api.get(`/appointments?date=${dateStr}`).then(r => setAppts(r.data))
   const loadRooms = () => api.get('/master/rooms').then(r => setRooms(r.data.filter(x => x.active)))
   useEffect(() => { fetch() }, [dateStr])
+  useEffect(() => { const t = setInterval(() => setNow(new Date()), 30000); return () => clearInterval(t) }, [])
   useEffect(() => {
     loadRooms()
     api.get('/patients').then(r => setPatients(r.data))
@@ -329,6 +336,16 @@ export default function Appointments() {
               </div>
             )
           })}
+
+          {/* เส้นเวลาปัจจุบัน (สีแดง) */}
+          {showNow && (
+            <div style={{ gridColumn: '1 / -1', gridRow: nowRow + 2, position: 'relative', zIndex: 25, pointerEvents: 'none' }}>
+              <div className="absolute inset-x-0 flex items-center" style={{ top: `${nowFrac * 100}%`, transform: 'translateY(-50%)' }}>
+                <span className="ml-1 text-[10px] font-semibold text-white bg-red-500 rounded px-1 whitespace-nowrap shadow-sm">{format(now, 'HH:mm')}</span>
+                <div className="flex-1 border-t-2 border-red-500" />
+              </div>
+            </div>
+          )}
         </div>
       </Card>
 

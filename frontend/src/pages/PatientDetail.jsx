@@ -41,7 +41,7 @@ export default function PatientDetail() {
   const outstanding = patient.bills.filter(b => b.status === 'UNPAID').reduce((s, b) => s + b.total, 0)
 
   return (
-    <div className="p-6 mx-auto max-w-5xl">
+    <div className="p-6 mx-auto max-w-[1320px]">
       <button onClick={() => nav(-1)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-600 mb-4">
         <ArrowLeft size={14} /> กลับ
       </button>
@@ -96,6 +96,8 @@ export default function PatientDetail() {
         })}
       </div>
 
+      {/* เนื้อหาแต่ละแท็บ — key={tab} ทำให้ re-mount แล้วเล่น animation ทุกครั้งที่สลับ */}
+      <div key={tab} className="tab-enter">
       {/* Tab: ประวัติส่วนตัว */}
       {tab === 'personal' && (
         <Card className="p-5 space-y-5">
@@ -227,6 +229,7 @@ export default function PatientDetail() {
           )}
         </Section>
       )}
+      </div>
 
       {modal === 'edit' && <EditModal patient={patient} onClose={() => setModal(null)} onSaved={() => { setModal(null); fetch() }} />}
       {modal === 'report' && (

@@ -205,8 +205,100 @@ async function main() {
     { kind: 'SERVICE', description: 'เอกซเรย์ทรวงอก', qty: 1, unitPrice: 400 },
   ], { status: 'PAID', pm: 'บัตรเครดิต', discount: 100, daysAgo: 30 })
 
+  // ═══ สุ่มข้อมูลเพิ่ม (คนไข้/นัด/การรักษา/บิล) ให้ระบบมีรายการเยอะขึ้น ═══
+  const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1))
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)]
+
+  const firstMale = ['สมศักดิ์', 'วิชัย', 'ประเสริฐ', 'อนุชา', 'กิตติ', 'ณรงค์', 'สุริยา', 'ชาญชัย', 'ภาคิน', 'ธีรพงษ์', 'อภิสิทธิ์', 'ยุทธนา', 'เอกชัย', 'พิชิต']
+  const firstFemale = ['วรรณา', 'ปราณี', 'สุนีย์', 'กมลชนก', 'นภัสสร', 'อรอนงค์', 'ชนิดา', 'รุ่งนภา', 'ศิริพร', 'เบญจมาศ', 'ทิพวรรณ', 'จินตนา', 'อารีย์', 'พรทิพย์']
+  const lastNames = ['รักชาติ', 'ศรีสุข', 'ทองคำ', 'มั่นคง', 'สุขสันต์', 'บุญมา', 'วงศ์ไทย', 'เจริญสุข', 'แสนสุข', 'ดีงาม', 'ไพศาล', 'ก้าวหน้า', 'พูนทรัพย์', 'ใจซื่อ']
+  const occs = ['พนักงานบริษัท', 'ค้าขาย', 'เกษตรกร', 'ข้าราชการ', 'รับจ้าง', 'นักเรียน', 'แม่บ้าน', 'วิศวกร', 'พยาบาล']
+  const bloods = ['A', 'B', 'O', 'AB']
+  const insList = ['เงินสด', 'ประกันสังคม', 'บัตรทอง (30 บาท)', 'ประกันสุขภาพ', 'ข้าราชการ/รัฐวิสาหกิจ']
+  const chronicPool = ['', '', '', '', 'เบาหวาน', 'ความดันโลหิตสูง', 'ไขมันในเลือดสูง', 'หอบหืด']
+  const allergyPool = ['', '', '', '', '', 'Penicillin', 'Aspirin', 'อาหารทะเล']
+  const streets = ['สุขุมวิท', 'รัชดา', 'ลาดพร้าว', 'พหลโยธิน', 'เพชรเกษม', 'รามคำแหง']
+  const randId = () => String(rand(1, 3)) + Array.from({ length: 12 }, () => rand(0, 9)).join('')
+  const randPhone = () => '08' + Array.from({ length: 8 }, () => rand(0, 9)).join('')
+  const randBirth = () => `${rand(1955, 2016)}-${String(rand(1, 12)).padStart(2, '0')}-${String(rand(1, 28)).padStart(2, '0')}`
+
+  // + คนไข้อีก 15 คน (สุ่ม)
+  for (let i = 0; i < 15; i++) {
+    const male = Math.random() < 0.5
+    pats.push(await mkPat({
+      title: male ? 'นาย' : pick(['นาง', 'นางสาว']),
+      name: `${pick(male ? firstMale : firstFemale)} ${pick(lastNames)}`,
+      nationalId: randId(), gender: male ? 'MALE' : 'FEMALE', birthdate: randBirth(),
+      phone: randPhone(), bloodType: pick(bloods), occupation: pick(occs),
+      maritalStatus: pick(['โสด', 'สมรส', 'หย่า', 'หม้าย']), insurance: pick(insList),
+      chronic: pick(chronicPool), allergies: pick(allergyPool),
+      address: `${rand(1, 300)} ถ.${pick(streets)} กรุงเทพฯ`,
+    }))
+  }
+  const allPats = pats
+  const docList = Object.values(doc)
+  const roomList = Object.values(rooms)
+  const now = new Date()
+
+  // + นัดวันนี้ เต็มทุกห้อง (สถานะอิงเวลาจริง)
+  for (const room of roomList) {
+    let t = rand(8, 9) * 60
+    const count = rand(3, 5)
+    for (let i = 0; i < count; i++) {
+      const dur = pick([30, 30, 60])
+      if (t + dur > 18 * 60) break
+      const start = dayAt(0, Math.floor(t / 60), t % 60)
+      const end = new Date(start.getTime() + dur * 60000)
+      const status = end < now ? pick(['COMPLETED', 'COMPLETED', 'NO_SHOW'])
+        : (start <= now && now < end) ? 'IN_PROGRESS'
+          : (start - now < 30 * 60000) ? pick(['ARRIVED', 'CONFIRMED'])
+            : pick(['SCHEDULED', 'CONFIRMED'])
+      const s = pick(services)
+      await appt({ patientId: pick(allPats).id, doctorId: pick(docList).id, serviceId: svc[s[0]].id, departmentId: depts[s[2]].id, roomId: room.id, scheduledAt: start, endAt: end, status })
+      t += dur + pick([0, 0, 30])
+    }
+  }
+
+  // + นัดล่วงหน้า 5 วัน
+  for (let d = 1; d <= 5; d++) {
+    for (let i = 0; i < rand(2, 4); i++) {
+      const s = pick(services)
+      const st = dayAt(d, rand(8, 17), pick([0, 30]))
+      await appt({ patientId: pick(allPats).id, doctorId: pick(docList).id, serviceId: svc[s[0]].id, departmentId: depts[s[2]].id, roomId: pick(roomList).id, scheduledAt: st, endAt: new Date(st.getTime() + 30 * 60000), status: pick(['SCHEDULED', 'CONFIRMED']) })
+    }
+  }
+
+  // + ประวัติการรักษา + บิล (สุ่ม 16 รายการ)
+  const dxPool = [
+    ['ไข้หวัดใหญ่', 'มีไข้ ปวดเมื่อยตัว', 'ให้ยาลดไข้ ยาแก้ไอ พักผ่อน'],
+    ['ปวดหลังเรื้อรัง', 'ปวดหลังส่วนล่าง', 'ทำกายภาพบำบัด + ยาคลายกล้ามเนื้อ'],
+    ['ผื่นแพ้ผิวหนัง', 'ผื่นคันตามตัว', 'ให้ยาแก้แพ้ ครีมทาผิว'],
+    ['ฟันผุ', 'ปวดฟันกราม', 'อุดฟัน 1 ซี่'],
+    ['กระเพาะอาหารอักเสบ', 'ปวดท้อง จุกเสียด', 'ให้ยาลดกรด งดอาหารรสจัด'],
+    ['ข้อเข่าเสื่อม', 'ปวดเข่าเวลาเดิน', 'ยาแก้ปวด + กายภาพบำบัด'],
+    ['ภูมิแพ้อากาศ', 'คัดจมูก จาม', 'ให้ยาแก้แพ้'],
+  ]
+  const itemPool = [['พาราเซตามอล 500mg', 2], ['วิตามินซี', 5], ['ยาแก้แพ้ (Loratadine)', 4], ['ยาลดกรด', 3]]
+  for (let i = 0; i < 16; i++) {
+    const pt = pick(allPats)
+    const dx = pick(dxPool)
+    const daysAgo = rand(1, 60)
+    const v = await prisma.visit.create({
+      data: { patientId: pt.id, doctorId: pick(docList).id, visitDate: dayAt(-daysAgo, rand(9, 16)), chiefComplaint: dx[1], diagnosis: dx[0], treatment: dx[2] },
+    })
+    const s = pick(services)
+    const item = pick(itemPool)
+    await createBill(pt.id, v.id, [
+      { kind: 'SERVICE', description: s[0], qty: 1, unitPrice: s[1] },
+      { kind: 'ITEM', description: item[0], qty: rand(5, 20), unitPrice: item[1] },
+    ], { status: Math.random() < 0.65 ? 'PAID' : 'UNPAID', pm: pick(['เงินสด', 'โอนพร้อมเพย์', 'บัตรเครดิต']), daysAgo })
+  }
+
+  const [uc, pc, ac, vc, bc] = await Promise.all([
+    prisma.user.count(), prisma.patient.count(), prisma.appointment.count(), prisma.visit.count(), prisma.bill.count(),
+  ])
   console.log('✅ Seed สำเร็จ')
-  console.log(`   บุคลากร ${emp} คน (แพทย์ 6) · คนไข้ ${hn} คน · บริการ ${sv} รายการ · บิล ${billNo} ใบ\n`)
+  console.log(`   บุคลากร ${uc} · คนไข้ ${pc} · นัดหมาย ${ac} · การรักษา ${vc} · บิล ${bc}\n`)
   console.log('┌─────────────── บัญชีเข้าระบบ (login) ───────────────┐')
   console.log('│  MASTER     master@clinic.local     / master123     │')
   console.log('│  ADMIN      admin@clinic.local      / admin123      │')
