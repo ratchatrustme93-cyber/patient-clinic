@@ -29,7 +29,7 @@ export default function Dashboard() {
   const c = data.counts
 
   return (
-    <div className="p-6 mx-auto max-w-6xl">
+    <div className="p-6 mx-auto max-w-[1320px]">
       <PageHeader title={`สวัสดี, ${user?.name || ''}`} subtitle={format(new Date(), 'EEEE d MMMM yyyy', { locale: th })} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">

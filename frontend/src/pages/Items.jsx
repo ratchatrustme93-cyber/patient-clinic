@@ -43,7 +43,7 @@ export default function Items() {
   const filtered = items.filter(i => i.name.toLowerCase().includes(search.toLowerCase()) || i.code.toLowerCase().includes(search.toLowerCase()))
 
   return (
-    <div className="p-6 mx-auto max-w-4xl">
+    <div className="p-6 mx-auto max-w-[1320px]">
       <PageHeader title="สินค้า" subtitle={`${items.length} รายการ`}>
         {manage && <Btn onClick={openNew}><Plus size={14} className="inline mr-1" /> เพิ่มสินค้า</Btn>}
       </PageHeader>

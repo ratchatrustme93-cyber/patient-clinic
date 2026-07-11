@@ -26,7 +26,7 @@ export default function Bills() {
   }, [])
 
   return (
-    <div className="p-6 mx-auto max-w-4xl">
+    <div className="p-6 mx-auto max-w-[1320px]">
       <PageHeader title="บิล / การชำระเงิน">
         <Btn onClick={() => setCreating(true)}><Plus size={14} className="inline mr-1" /> สร้างบิล</Btn>
       </PageHeader>

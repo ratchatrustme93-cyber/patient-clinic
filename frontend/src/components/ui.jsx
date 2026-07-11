@@ -76,19 +76,26 @@ export function Btn({ children, variant = 'primary', className = '', ...props })
   )
 }
 
-export function Modal({ open, onClose, title, children, wide }) {
+export function Modal({ open, onClose, title, children, footer, wide, size }) {
   if (!open) return null
+  const width = size === 'xl' ? 'max-w-5xl' : wide ? 'max-w-2xl' : 'max-w-md'
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onMouseDown={onClose}>
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm" onMouseDown={onClose}>
       <div
-        className={`bg-white rounded-2xl p-6 w-full ${wide ? 'max-w-2xl' : 'max-w-md'} max-h-[90vh] overflow-y-auto`}
+        className={`modal-panel bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 w-full ${width} max-h-[75vh] flex flex-col`}
         onMouseDown={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-gray-800">{title}</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-600"><X size={18} /></button>
+        {/* header — stays fixed at top */}
+        <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 flex-shrink-0">
+          <h3 className="font-semibold text-gray-800 text-base">{title}</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg p-1 transition -mr-1"><X size={18} /></button>
         </div>
-        {children}
+        {/* body — scrolls between header and footer */}
+        <div className="px-6 py-4 overflow-y-auto">{children}</div>
+        {/* footer — stays fixed at bottom */}
+        {footer && (
+          <div className="px-6 py-3 border-t border-gray-200 flex-shrink-0 flex gap-2 justify-end">{footer}</div>
+        )}
       </div>
     </div>
   )

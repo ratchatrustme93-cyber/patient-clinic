@@ -51,7 +51,7 @@ export default function Employees() {
   const list = people.filter(u => tab === 'ALL' || u.role === tab)
 
   return (
-    <div className="p-6 mx-auto max-w-4xl">
+    <div className="p-6 mx-auto max-w-[1320px]">
       <PageHeader title="บุคลากร" subtitle={`${people.length} คน`}>
         {manage && <Btn onClick={openNew}><Plus size={14} className="inline mr-1" /> เพิ่มบุคลากร</Btn>}
       </PageHeader>

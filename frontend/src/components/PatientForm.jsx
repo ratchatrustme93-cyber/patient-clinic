@@ -14,42 +14,53 @@ export const EMPTY_PATIENT = {
   allergies: '', chronic: '', emergencyName: '', emergencyPhone: '', emergencyRelation: '', note: '',
 }
 
-// ซ่อนเลขบัตร เหลือ 3 ตัวท้าย → xxxxxxxxxx111
+// ซ่อนเลขบัตร เหลือ 4 ตัวท้าย → xxxxxxxxx2311
 export function maskId(id) {
   const s = (id || '').replace(/\D/g, '')
-  if (s.length <= 3) return s
-  return 'x'.repeat(s.length - 3) + s.slice(-3)
+  if (s.length <= 4) return s
+  return 'x'.repeat(s.length - 4) + s.slice(-4)
 }
 
 // ถ่ายรูปคนไข้ด้วยกล้อง (มี fallback อัปโหลดไฟล์) · เก็บเป็น base64 data URL
 export function PhotoCapture({ value, onChange }) {
-  const [streaming, setStreaming] = useState(false)
+  const [stream, setStream] = useState(null)
   const [err, setErr] = useState('')
   const videoRef = useRef(null)
-  const streamRef = useRef(null)
 
   const stop = () => {
-    streamRef.current?.getTracks().forEach(t => t.stop())
-    streamRef.current = null
-    setStreaming(false)
+    setStream(s => { s?.getTracks().forEach(t => t.stop()); return null })
   }
+  // ผูก stream เข้ากับ <video> หลัง element ถูก mount แล้ว (กันปัญหา ref ยังไม่พร้อม)
+  useEffect(() => {
+    const v = videoRef.current
+    if (v && stream) {
+      v.srcObject = stream
+      v.play().catch(() => {})
+    }
+  }, [stream])
   useEffect(() => stop, []) // ปิดกล้องเมื่อ unmount
 
   async function start() {
     setErr('')
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setErr('เบราว์เซอร์นี้ไม่รองรับกล้อง หรือหน้าเว็บไม่ใช่ https/localhost')
+      return
+    }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
-      streamRef.current = stream
-      setStreaming(true)
-      requestAnimationFrame(() => { if (videoRef.current) videoRef.current.srcObject = stream })
-    } catch {
-      setErr('เปิดกล้องไม่ได้ — ตรวจสอบสิทธิ์การใช้กล้องของเบราว์เซอร์')
+      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+      setStream(s)
+    } catch (e) {
+      const msg = e.name === 'NotAllowedError' ? 'ถูกปฏิเสธสิทธิ์ — กดอนุญาตกล้องที่แถบ address bar'
+        : e.name === 'NotFoundError' ? 'ไม่พบกล้องบนเครื่องนี้'
+        : e.name === 'NotReadableError' ? 'กล้องถูกโปรแกรมอื่นใช้งานอยู่'
+        : `เปิดกล้องไม่ได้ (${e.name || 'ข้อผิดพลาด'})`
+      setErr(msg)
     }
   }
 
   function capture() {
     const v = videoRef.current
-    if (!v || !v.videoWidth) return
+    if (!v || !v.videoWidth) { setErr('กล้องยังไม่พร้อม รอสักครู่แล้วลองใหม่'); return }
     const canvas = document.createElement('canvas')
     canvas.width = v.videoWidth
     canvas.height = v.videoHeight
@@ -69,14 +80,14 @@ export function PhotoCapture({ value, onChange }) {
   return (
     <div className="flex items-start gap-4">
       <div className="w-28 h-28 rounded-xl bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center flex-shrink-0">
-        {streaming
+        {stream
           ? <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
           : value
             ? <img src={value} alt="รูปคนไข้" className="w-full h-full object-cover" />
             : <Camera size={28} className="text-gray-400" />}
       </div>
       <div className="flex flex-col gap-2">
-        {streaming ? (
+        {stream ? (
           <>
             <button type="button" onClick={capture} className="px-3 py-1.5 rounded-lg bg-brand-600 text-white text-sm hover:bg-brand-700 inline-flex items-center gap-1.5"><Camera size={14} /> ถ่ายภาพ</button>
             <button type="button" onClick={stop} className="text-xs text-gray-500 hover:text-gray-700">ยกเลิก</button>
@@ -101,9 +112,9 @@ export function PhotoCapture({ value, onChange }) {
   )
 }
 
-// เลขบัตรประชาชน 13 หลัก · พิมพ์ปกติ + ปุ่มตาเพื่อซ่อน/แสดง (ค่าเริ่มต้น: มีข้อมูลอยู่แล้ว = ซ่อน)
+// เลขบัตรประชาชน 13 หลัก · ปิดตา = แสดงแบบ xxxxxxxxx2311 (แต่ยังพิมพ์ได้) · เปิดตา = เห็นตัวเลขเต็ม
 export function NationalIdInput({ value, onChange }) {
-  const [reveal, setReveal] = useState(!value)
+  const [reveal, setReveal] = useState(false)
   return (
     <div className="relative">
       <input
@@ -111,8 +122,18 @@ export function NationalIdInput({ value, onChange }) {
         inputMode="numeric"
         placeholder="เลข 13 หลัก"
         value={reveal ? value : maskId(value)}
-        readOnly={!reveal}
-        onChange={e => reveal && onChange(e.target.value.replace(/\D/g, '').slice(0, 13))}
+        onChange={e => { if (reveal) onChange(e.target.value.replace(/\D/g, '').slice(0, 13)) }}
+        onKeyDown={e => {
+          if (reveal) return
+          // ตอนซ่อน: จัดการพิมพ์เองแบบต่อท้าย เพื่อให้ display ยังเป็น xxxx...เลขท้าย
+          if (e.key === 'Backspace') { e.preventDefault(); onChange(value.slice(0, -1)) }
+          else if (/^[0-9]$/.test(e.key)) { e.preventDefault(); if (value.length < 13) onChange(value + e.key) }
+        }}
+        onPaste={e => {
+          if (reveal) return
+          e.preventDefault()
+          onChange((value + e.clipboardData.getData('text')).replace(/\D/g, '').slice(0, 13))
+        }}
       />
       <button type="button" onClick={() => setReveal(r => !r)} title={reveal ? 'ซ่อน' : 'แสดง'}
         className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -127,81 +148,83 @@ export function PatientFields({ form, setForm }) {
   const set = f => e => setForm(p => ({ ...p, [f]: e.target.value }))
   const setV = (f, v) => setForm(p => ({ ...p, [f]: v }))
   return (
-    <div className="space-y-4">
-      <PhotoCapture value={form.photo} onChange={v => setV('photo', v)} />
-
-      <div className="grid grid-cols-3 gap-3">
-        <Field label="คำนำหน้า">
-          <select className={inputCls} value={form.title} onChange={set('title')}>
-            <option value="">—</option>
-            {TITLES.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </Field>
-        <div className="col-span-2">
-          <Field label="ชื่อ-นามสกุล *"><input required className={inputCls} value={form.name} onChange={set('name')} /></Field>
+    <div className="space-y-3">
+      {/* ข้อมูลส่วนตัว */}
+      <div>
+        <p className="text-sm font-semibold text-gray-700 mb-2">ข้อมูลส่วนตัว</p>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <PhotoCapture value={form.photo} onChange={v => setV('photo', v)} />
+          <div className="grid grid-cols-2 gap-3 flex-1">
+            <Field label="คำนำหน้า">
+              <select className={inputCls} value={form.title} onChange={set('title')}>
+                <option value="">—</option>
+                {TITLES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </Field>
+            <Field label="ชื่อ-นามสกุล *"><input required className={inputCls} value={form.name} onChange={set('name')} /></Field>
+            <div className="col-span-2"><Field label="เลขบัตรประชาชน (13 หลัก)"><NationalIdInput value={form.nationalId} onChange={v => setV('nationalId', v)} /></Field></div>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3">
+          <Field label="เพศ">
+            <select className={inputCls} value={form.gender} onChange={set('gender')}>
+              <option value="">ไม่ระบุ</option><option value="MALE">ชาย</option><option value="FEMALE">หญิง</option><option value="OTHER">อื่นๆ</option>
+            </select>
+          </Field>
+          <Field label="วันเกิด"><input type="date" className={inputCls} value={form.birthdate} onChange={set('birthdate')} /></Field>
+          <Field label="สัญชาติ"><input className={inputCls} value={form.nationality} onChange={set('nationality')} /></Field>
+          <Field label="ศาสนา"><input className={inputCls} value={form.religion} onChange={set('religion')} placeholder="พุทธ, อิสลาม..." /></Field>
+          <Field label="สถานภาพ">
+            <select className={inputCls} value={form.maritalStatus} onChange={set('maritalStatus')}>
+              <option value="">—</option>
+              {MARITAL.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </Field>
+          <Field label="อาชีพ"><input className={inputCls} value={form.occupation} onChange={set('occupation')} /></Field>
         </div>
       </div>
 
-      <Field label="เลขบัตรประชาชน (13 หลัก)">
-        <NationalIdInput value={form.nationalId} onChange={v => setV('nationalId', v)} />
-      </Field>
-
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="เพศ">
-          <select className={inputCls} value={form.gender} onChange={set('gender')}>
-            <option value="">ไม่ระบุ</option><option value="MALE">ชาย</option><option value="FEMALE">หญิง</option><option value="OTHER">อื่นๆ</option>
-          </select>
-        </Field>
-        <Field label="วันเกิด"><input type="date" className={inputCls} value={form.birthdate} onChange={set('birthdate')} /></Field>
+      {/* ข้อมูลติดต่อ */}
+      <div className="pt-2 border-t border-gray-100">
+        <p className="text-sm font-semibold text-gray-700 mb-2">ข้อมูลติดต่อ</p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <Field label="เบอร์โทร"><input className={inputCls} value={form.phone} onChange={set('phone')} /></Field>
+          <Field label="อีเมล"><input type="email" className={inputCls} value={form.email} onChange={set('email')} /></Field>
+          <div className="col-span-2 md:col-span-3"><Field label="ที่อยู่"><input className={inputCls} value={form.address} onChange={set('address')} /></Field></div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="สัญชาติ"><input className={inputCls} value={form.nationality} onChange={set('nationality')} /></Field>
-        <Field label="ศาสนา"><input className={inputCls} value={form.religion} onChange={set('religion')} placeholder="พุทธ, อิสลาม, คริสต์..." /></Field>
+      {/* ข้อมูลสุขภาพ */}
+      <div className="pt-2 border-t border-gray-100">
+        <p className="text-sm font-semibold text-gray-700 mb-2">ข้อมูลสุขภาพ</p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <Field label="กรุ๊ปเลือด"><input className={inputCls} value={form.bloodType} onChange={set('bloodType')} placeholder="A, B, O, AB" /></Field>
+          <Field label="น้ำหนัก (กก.)"><input type="number" step="0.1" className={inputCls} value={form.weight} onChange={set('weight')} /></Field>
+          <Field label="ส่วนสูง (ซม.)"><input type="number" step="0.1" className={inputCls} value={form.height} onChange={set('height')} /></Field>
+          <Field label="สิทธิการรักษา">
+            <select className={inputCls} value={form.insurance} onChange={set('insurance')}>
+              <option value="">—</option>
+              {INSURANCE.map(i => <option key={i} value={i}>{i}</option>)}
+            </select>
+          </Field>
+          <Field label="แพ้ยา/สาร (คั่นด้วย ,)"><TagInput value={form.allergies} onChange={v => setV('allergies', v)} placeholder="เช่น Penicillin" /></Field>
+          <Field label="โรคประจำตัว (คั่นด้วย ,)"><TagInput value={form.chronic} onChange={v => setV('chronic', v)} placeholder="เช่น เบาหวาน" /></Field>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="สถานภาพ">
-          <select className={inputCls} value={form.maritalStatus} onChange={set('maritalStatus')}>
-            <option value="">—</option>
-            {MARITAL.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
-        </Field>
-        <Field label="อาชีพ"><input className={inputCls} value={form.occupation} onChange={set('occupation')} /></Field>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="เบอร์โทร"><input className={inputCls} value={form.phone} onChange={set('phone')} /></Field>
-        <Field label="อีเมล"><input type="email" className={inputCls} value={form.email} onChange={set('email')} /></Field>
-      </div>
-      <Field label="ที่อยู่"><input className={inputCls} value={form.address} onChange={set('address')} /></Field>
-
-      <div className="grid grid-cols-3 gap-3">
-        <Field label="กรุ๊ปเลือด"><input className={inputCls} value={form.bloodType} onChange={set('bloodType')} placeholder="A, B, O, AB" /></Field>
-        <Field label="น้ำหนัก (กก.)"><input type="number" step="0.1" className={inputCls} value={form.weight} onChange={set('weight')} /></Field>
-        <Field label="ส่วนสูง (ซม.)"><input type="number" step="0.1" className={inputCls} value={form.height} onChange={set('height')} /></Field>
-      </div>
-
-      <Field label="สิทธิการรักษา">
-        <select className={inputCls} value={form.insurance} onChange={set('insurance')}>
-          <option value="">—</option>
-          {INSURANCE.map(i => <option key={i} value={i}>{i}</option>)}
-        </select>
-      </Field>
-
-      <Field label="ประวัติแพ้ยา/สาร (คั่นด้วย ,)"><TagInput value={form.allergies} onChange={v => setV('allergies', v)} placeholder="เช่น Penicillin, Aspirin" /></Field>
-      <Field label="โรคประจำตัว (คั่นด้วย ,)"><TagInput value={form.chronic} onChange={v => setV('chronic', v)} placeholder="เช่น เบาหวาน, ไขมัน, หัวใจ" /></Field>
-
-      <div className="pt-3 border-t border-gray-100">
-        <p className="text-sm font-medium text-gray-700 mb-2">ผู้ติดต่อกรณีฉุกเฉิน</p>
-        <div className="grid grid-cols-2 gap-3">
+      {/* ผู้ติดต่อกรณีฉุกเฉิน */}
+      <div className="pt-2 border-t border-gray-100">
+        <p className="text-sm font-semibold text-gray-700 mb-2">ผู้ติดต่อกรณีฉุกเฉิน</p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <Field label="ชื่อ-นามสกุล"><input className={inputCls} value={form.emergencyName} onChange={set('emergencyName')} /></Field>
           <Field label="ความสัมพันธ์"><input className={inputCls} value={form.emergencyRelation} onChange={set('emergencyRelation')} placeholder="บิดา, มารดา, คู่สมรส..." /></Field>
+          <Field label="เบอร์โทร"><input className={inputCls} value={form.emergencyPhone} onChange={set('emergencyPhone')} /></Field>
         </div>
-        <div className="mt-3"><Field label="เบอร์โทร"><input className={inputCls} value={form.emergencyPhone} onChange={set('emergencyPhone')} /></Field></div>
       </div>
 
-      <Field label="หมายเหตุ"><textarea rows={2} className={inputCls} value={form.note} onChange={set('note')} /></Field>
+      <div className="pt-2 border-t border-gray-100">
+        <Field label="หมายเหตุ"><textarea rows={2} className={inputCls} value={form.note} onChange={set('note')} /></Field>
+      </div>
     </div>
   )
 }

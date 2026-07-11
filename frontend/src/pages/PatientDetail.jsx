@@ -41,7 +41,7 @@ export default function PatientDetail() {
   const outstanding = patient.bills.filter(b => b.status === 'UNPAID').reduce((s, b) => s + b.total, 0)
 
   return (
-    <div className="p-6 mx-auto max-w-3xl">
+    <div className="p-6 mx-auto max-w-5xl">
       <button onClick={() => nav(-1)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-600 mb-4">
         <ArrowLeft size={14} /> กลับ
       </button>
@@ -294,13 +294,13 @@ function EditModal({ patient, onClose, onSaved }) {
     try { await api.put(`/patients/${patient.id}`, form); onSaved() } finally { setSaving(false) }
   }
   return (
-    <Modal open onClose={onClose} title="แก้ไขข้อมูลคนไข้" wide>
-      <form onSubmit={save} className="space-y-3">
+    <Modal open onClose={onClose} title="แก้ไขข้อมูลคนไข้" size="xl"
+      footer={<>
+        <Btn type="button" variant="ghost" onClick={onClose}>ยกเลิก</Btn>
+        <Btn type="submit" form="patient-edit-form" disabled={saving}>{saving ? 'กำลังบันทึก...' : 'บันทึก'}</Btn>
+      </>}>
+      <form id="patient-edit-form" onSubmit={save}>
         <PatientFields form={form} setForm={setForm} />
-        <div className="flex gap-2 pt-2">
-          <Btn type="button" variant="ghost" className="flex-1" onClick={onClose}>ยกเลิก</Btn>
-          <Btn type="submit" disabled={saving} className="flex-1">{saving ? 'กำลังบันทึก...' : 'บันทึก'}</Btn>
-        </div>
       </form>
     </Modal>
   )

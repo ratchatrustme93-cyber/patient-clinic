@@ -38,7 +38,7 @@ export default function Patients() {
   }
 
   return (
-    <div className="p-6 mx-auto max-w-5xl">
+    <div className="p-6 mx-auto max-w-[1320px]">
       <PageHeader title="คนไข้" subtitle={`${list.length} รายชื่อ`}>
         <Btn onClick={() => { setForm(EMPTY); setOpen(true) }}><Plus size={14} className="inline mr-1" /> เพิ่มคนไข้</Btn>
       </PageHeader>
@@ -93,13 +93,13 @@ export default function Patients() {
         {list.length === 0 && <Empty>ไม่พบข้อมูลคนไข้</Empty>}
       </Card>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="เพิ่มคนไข้ใหม่" wide>
-        <form onSubmit={save} className="space-y-3">
+      <Modal open={open} onClose={() => setOpen(false)} title="เพิ่มคนไข้ใหม่" size="xl"
+        footer={<>
+          <Btn type="button" variant="ghost" onClick={() => setOpen(false)}>ยกเลิก</Btn>
+          <Btn type="submit" form="patient-add-form" disabled={saving}>{saving ? 'กำลังบันทึก...' : 'บันทึก'}</Btn>
+        </>}>
+        <form id="patient-add-form" onSubmit={save}>
           <PatientFields form={form} setForm={setForm} />
-          <div className="flex gap-2 pt-2">
-            <Btn type="button" variant="ghost" className="flex-1" onClick={() => setOpen(false)}>ยกเลิก</Btn>
-            <Btn type="submit" disabled={saving} className="flex-1">{saving ? 'กำลังบันทึก...' : 'บันทึก'}</Btn>
-          </div>
         </form>
       </Modal>
     </div>

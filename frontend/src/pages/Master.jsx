@@ -18,7 +18,7 @@ export default function Master() {
   const [tab, setTab] = useState('departments')
 
   return (
-    <div className="p-6 mx-auto max-w-3xl">
+    <div className="p-6 mx-auto max-w-[1320px]">
       <PageHeader title="ข้อมูลหลัก (Master Data)" subtitle="ตั้งค่ารายการอ้างอิงที่ใช้ทั้งระบบ" />
       <div className="flex gap-1 mb-4 flex-wrap">
         {TABS.map(t => (
