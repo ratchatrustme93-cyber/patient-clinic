@@ -38,6 +38,8 @@ function RecorderWidget({ session, minimized, setMinimized, close }) {
   const [audioUrl, setAudioUrl] = useState(null)
   const [audioB64, setAudioB64] = useState(null)
   const [err, setErr] = useState('')
+  const [srMsg, setSrMsg] = useState('') // ข้อความสถานะ/ปัญหาของซับ
+  const [listening, setListening] = useState(false)
   const [saving, setSaving] = useState(false)
   const [copied, setCopied] = useState(false)
   const srSupported = !!(window.SpeechRecognition || window.webkitSpeechRecognition)
@@ -86,11 +88,14 @@ function RecorderWidget({ session, minimized, setMinimized, close }) {
   // ซับเรียลไทม์ด้วย Web Speech API (ภาษาไทย) — ต่อเสียงเป็นข้อความสด
   function startSR() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SR) return
+    if (!SR) { setSrMsg('เบราว์เซอร์นี้ไม่รองรับซับอัตโนมัติ — ใช้ Chrome/Edge (พิมพ์ซับเองได้)'); return }
     const rec = new SR()
     rec.lang = 'th-TH'
     rec.continuous = true
     rec.interimResults = true
+    rec.maxAlternatives = 1
+    rec.onstart = () => { setListening(true); setSrMsg('') }
+    rec.onaudiostart = () => setListening(true)
     rec.onresult = e => {
       let live = ''
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -100,17 +105,28 @@ function RecorderWidget({ session, minimized, setMinimized, close }) {
       }
       setInterim(live)
     }
-    rec.onend = () => { if (!stoppingRef.current) { try { rec.start() } catch { /* already started */ } } }
-    rec.onerror = () => {}
+    rec.onerror = ev => {
+      if (ev.error === 'no-speech' || ev.error === 'aborted') return
+      setSrMsg(
+        ev.error === 'not-allowed' || ev.error === 'service-not-allowed' ? 'ไมโครโฟนถูกปฏิเสธสิทธิ์ (ซับใช้ไม่ได้)'
+          : ev.error === 'audio-capture' ? 'เข้าถึงไมค์ไม่ได้ — อาจถูกโปรแกรมอื่นใช้อยู่'
+            : ev.error === 'network' ? 'ซับต้องต่ออินเทอร์เน็ต · บาง browser (เช่น Brave) ปิดฟีเจอร์นี้'
+              : `ซับมีปัญหา: ${ev.error}`
+      )
+    }
+    rec.onend = () => {
+      setListening(false)
+      if (!stoppingRef.current) { try { rec.start() } catch { /* already started */ } }
+    }
     recRef.current = rec
-    try { rec.start() } catch { /* ignore */ }
+    try { rec.start() } catch { /* already started */ }
   }
 
   function stopRecording() {
     stoppingRef.current = true
     clearInterval(timerRef.current)
     try { recRef.current?.stop() } catch { /* ignore */ }
-    setInterim('')
+    setInterim(''); setListening(false)
     if (mrRef.current && mrRef.current.state !== 'inactive') mrRef.current.stop()
     setStatus('stopped')
   }
@@ -174,10 +190,16 @@ function RecorderWidget({ session, minimized, setMinimized, close }) {
         <span className={`w-2.5 h-2.5 rounded-full ${status === 'recording' ? 'bg-red-500 animate-pulse' : 'bg-gray-400'}`} />
         <span className="text-sm font-mono text-gray-700">{fmt(seconds)}</span>
         <span className="text-xs text-gray-500">{status === 'recording' ? 'กำลังอัด…' : 'หยุดแล้ว'}</span>
-        {!srSupported && <span className="ml-auto text-[11px] text-amber-600">เบราว์เซอร์นี้ไม่รองรับซับอัตโนมัติ</span>}
+        {status === 'recording' && srSupported && (
+          <span className={`ml-auto text-[11px] inline-flex items-center gap-1 ${listening ? 'text-green-600' : 'text-gray-400'}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${listening ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`} />
+            {listening ? 'กำลังฟัง' : 'รอเสียง…'}
+          </span>
+        )}
       </div>
 
       {err && <div className="px-4 py-2 text-xs text-red-600 bg-red-50">{err}</div>}
+      {srMsg && <div className="px-4 py-2 text-xs text-amber-700 bg-amber-50 border-b border-amber-100">⚠️ {srMsg}</div>}
 
       {/* transcript (CC) — แก้ไขได้ */}
       <div className="p-4 space-y-2">
@@ -194,8 +216,12 @@ function RecorderWidget({ session, minimized, setMinimized, close }) {
           placeholder={srSupported ? 'พูดได้เลย ซับจะขึ้นที่นี่…' : 'พิมพ์บันทึกข้อความที่นี่…'}
           className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-300 resize-none"
         />
-        {status === 'recording' && interim && (
-          <p className="text-sm text-gray-400 italic leading-snug">…{interim}</p>
+        {status === 'recording' && (
+          <p className="text-sm leading-snug min-h-[1.25rem]">
+            {interim
+              ? <span className="text-brand-600">{interim}</span>
+              : <span className="text-gray-400 italic">{listening ? 'พูดได้เลย…' : ''}</span>}
+          </p>
         )}
         {audioUrl && <audio controls src={audioUrl} className="w-full h-9 mt-1" />}
       </div>

@@ -235,7 +235,7 @@ model Visit {
 model VoiceRecord {
   id          Int      @id @default(autoincrement())
   visitId     Int
-  audio       String?  @db.Text // base64 data URL (audio/webm)
+  audioFile   String? // ชื่อไฟล์เสียงบนดิสก์ (uploads/voice/*.webm)
   transcript  String?  @db.Text // ซับ/ข้อความจากเสียง
   durationSec Int      @default(0)
   createdAt   DateTime @default(now())

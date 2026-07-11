@@ -7,6 +7,7 @@ import api from '../lib/api'
 import { PageHeader, Btn, Modal, Field, inputCls, Empty, Badge, Card, TagInput, StatTile } from '../components/ui'
 import { PatientFields, EMPTY_PATIENT, maskId } from '../components/PatientForm'
 import { useVoiceRecorder } from '../components/VoiceRecorder'
+import { getToken } from '../lib/auth'
 
 const GENDER = { MALE: 'ชาย', FEMALE: 'หญิง', OTHER: 'อื่นๆ' }
 const APPT = { SCHEDULED: 'นัดไว้', CONFIRMED: 'ยืนยัน', ARRIVED: 'มาถึง', IN_PROGRESS: 'กำลังตรวจ', COMPLETED: 'เสร็จ', CANCELLED: 'ยกเลิก', NO_SHOW: 'ไม่มา' }
@@ -285,7 +286,7 @@ function VoiceItem({ rec, onChange }) {
   return (
     <div className="bg-gray-50 rounded-lg p-2.5 border border-gray-100">
       <div className="flex items-center gap-2 mb-1.5">
-        {rec.audio && <audio controls src={rec.audio} className="h-8 flex-1 min-w-0" />}
+        {rec.audioFile && <audio controls preload="none" src={`/api/voice-records/${rec.id}/audio?t=${getToken()}`} className="h-8 flex-1 min-w-0" />}
         <span className="text-[11px] text-gray-400 flex-shrink-0">{dur}</span>
       </div>
       {editing ? (
