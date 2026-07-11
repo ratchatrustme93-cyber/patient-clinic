@@ -1,0 +1,28 @@
+# ── Dependencies ──
+node_modules/
+
+# ── Secrets / environment ──
+.env
+.env.*
+!.env.example
+
+# ── Build output ──
+dist/
+build/
+
+# ── Uploaded media (รูปคนไข้ / ไฟล์เสียงที่อัปโหลด) — ห้ามขึ้น GitHub ──
+uploads/
+**/uploads/
+
+# ── Logs ──
+*.log
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ── OS / editor ──
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
