@@ -224,10 +224,23 @@ model Visit {
   note           String?
   createdAt      DateTime @default(now())
 
-  patient     Patient      @relation(fields: [patientId], references: [id])
-  appointment Appointment? @relation(fields: [appointmentId], references: [id])
-  doctor      User?        @relation("VisitDoctor", fields: [doctorId], references: [id])
-  bill        Bill?
+  patient      Patient       @relation(fields: [patientId], references: [id])
+  appointment  Appointment?  @relation(fields: [appointmentId], references: [id])
+  doctor       User?         @relation("VisitDoctor", fields: [doctorId], references: [id])
+  bill         Bill?
+  voiceRecords VoiceRecord[]
+}
+
+// ── บันทึกเสียงในแผนการรักษา (อัดเสียง + ซับ) ──
+model VoiceRecord {
+  id          Int      @id @default(autoincrement())
+  visitId     Int
+  audio       String?  @db.Text // base64 data URL (audio/webm)
+  transcript  String?  @db.Text // ซับ/ข้อความจากเสียง
+  durationSec Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  visit Visit @relation(fields: [visitId], references: [id], onDelete: Cascade)
 }
 
 // ── Billing ──

@@ -55,7 +55,11 @@ router.get('/:id', auth, async (req, res) => {
         orderBy: { scheduledAt: 'desc' },
       },
       visits: {
-        include: { doctor: { select: { name: true } }, bill: true },
+        include: {
+          doctor: { select: { name: true } },
+          bill: true,
+          voiceRecords: { orderBy: { createdAt: 'asc' } },
+        },
         orderBy: { visitDate: 'desc' },
       },
       bills: { orderBy: { date: 'desc' } },

@@ -13,10 +13,11 @@ import appointmentsRouter from './routes/appointments.js'
 import visitsRouter from './routes/visits.js'
 import billsRouter from './routes/bills.js'
 import overviewRouter from './routes/overview.js'
+import voiceRouter from './routes/voice.js'
 
 const app = express()
 app.use(cors())
-app.use(express.json())
+app.use(express.json({ limit: '50mb' })) // รองรับรูป/เสียง base64
 
 app.use('/api/auth', authRouter)
 app.use('/api/employees', employeesRouter)
@@ -28,6 +29,7 @@ app.use('/api/appointments', appointmentsRouter)
 app.use('/api/visits', visitsRouter)
 app.use('/api/bills', billsRouter)
 app.use('/api/overview', overviewRouter)
+app.use('/api/voice-records', voiceRouter)
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 

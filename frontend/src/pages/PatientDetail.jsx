@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { format, differenceInYears } from 'date-fns'
 import { th } from 'date-fns/locale'
-import { ArrowLeft, Pencil, Plus, FileText, Calendar, Receipt, Printer, AlertTriangle, User, Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, Pencil, Plus, FileText, Calendar, Receipt, Printer, AlertTriangle, User, Eye, EyeOff, Mic, Copy, Check, Trash2 } from 'lucide-react'
 import api from '../lib/api'
 import { PageHeader, Btn, Modal, Field, inputCls, Empty, Badge, Card, TagInput, StatTile } from '../components/ui'
 import { PatientFields, EMPTY_PATIENT, maskId } from '../components/PatientForm'
+import { useVoiceRecorder } from '../components/VoiceRecorder'
 
 const GENDER = { MALE: 'ชาย', FEMALE: 'หญิง', OTHER: 'อื่นๆ' }
 const APPT = { SCHEDULED: 'นัดไว้', CONFIRMED: 'ยืนยัน', ARRIVED: 'มาถึง', IN_PROGRESS: 'กำลังตรวจ', COMPLETED: 'เสร็จ', CANCELLED: 'ยกเลิก', NO_SHOW: 'ไม่มา' }
@@ -25,6 +26,7 @@ export default function PatientDetail() {
   const [modal, setModal] = useState(null) // 'edit' | 'report' | 'bill'
   const [viewReport, setViewReport] = useState(null)
   const [tab, setTab] = useState('personal')
+  const voice = useVoiceRecorder()
 
   const fetch = () => api.get(`/patients/${id}`).then(r => setPatient(r.data))
   useEffect(() => {
@@ -184,6 +186,22 @@ export default function PatientDetail() {
                           : <button onClick={() => setModal({ bill: true, visitId: v.id })} className="text-xs text-brand-600 hover:underline">+ ออกบิล</button>}
                       </div>
                     </div>
+
+                    {/* บันทึกเสียง (ผูกได้หลายอันต่อการรักษา) */}
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs text-gray-500">🎙️ บันทึกเสียง {v.voiceRecords?.length ? `(${v.voiceRecords.length})` : ''}</span>
+                        <button onClick={() => voice.open({ visitId: v.id, label: v.diagnosis || 'การรักษา', onSaved: fetch })}
+                          className="text-xs text-brand-600 hover:underline inline-flex items-center gap-1">
+                          <Mic size={12} /> อัดเสียง
+                        </button>
+                      </div>
+                      {v.voiceRecords?.length > 0 && (
+                        <div className="space-y-2">
+                          {v.voiceRecords.map(vr => <VoiceItem key={vr.id} rec={vr} onChange={fetch} />)}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -251,6 +269,46 @@ function Fact({ label, value }) {
     <div>
       <dt className="text-xs text-gray-500">{label}</dt>
       <dd className="text-sm text-gray-800 mt-0.5">{value}</dd>
+    </div>
+  )
+}
+
+// รายการบันทึกเสียง 1 อัน — เล่นเสียง + ซับ (คัดลอก/แก้ไข/ลบ)
+function VoiceItem({ rec, onChange }) {
+  const [editing, setEditing] = useState(false)
+  const [text, setText] = useState(rec.transcript || '')
+  const [copied, setCopied] = useState(false)
+  const dur = `${Math.floor(rec.durationSec / 60)}:${String(rec.durationSec % 60).padStart(2, '0')}`
+  const copy = () => { navigator.clipboard?.writeText(rec.transcript || ''); setCopied(true); setTimeout(() => setCopied(false), 1500) }
+  const saveEdit = async () => { await api.put(`/voice-records/${rec.id}`, { transcript: text }); setEditing(false); onChange?.() }
+  const del = async () => { if (!confirm('ลบบันทึกเสียงนี้?')) return; await api.delete(`/voice-records/${rec.id}`); onChange?.() }
+  return (
+    <div className="bg-gray-50 rounded-lg p-2.5 border border-gray-100">
+      <div className="flex items-center gap-2 mb-1.5">
+        {rec.audio && <audio controls src={rec.audio} className="h-8 flex-1 min-w-0" />}
+        <span className="text-[11px] text-gray-400 flex-shrink-0">{dur}</span>
+      </div>
+      {editing ? (
+        <div className="space-y-1.5">
+          <textarea value={text} onChange={e => setText(e.target.value)} rows={3}
+            className="w-full text-sm border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-300 resize-none" />
+          <div className="flex gap-3 justify-end">
+            <button onClick={() => { setEditing(false); setText(rec.transcript || '') }} className="text-xs text-gray-500 hover:underline">ยกเลิก</button>
+            <button onClick={saveEdit} className="text-xs text-brand-600 font-medium hover:underline">บันทึก</button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {rec.transcript
+            ? <p className="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">{rec.transcript}</p>
+            : <p className="text-xs text-gray-400 italic">ไม่มีซับ</p>}
+          <div className="flex items-center gap-3 mt-1.5">
+            <button onClick={copy} className="text-[11px] text-gray-500 hover:text-brand-600 inline-flex items-center gap-1">{copied ? <Check size={11} /> : <Copy size={11} />}{copied ? 'คัดลอกแล้ว' : 'คัดลอก'}</button>
+            <button onClick={() => setEditing(true)} className="text-[11px] text-gray-500 hover:text-brand-600">แก้ไขซับ</button>
+            <button onClick={del} className="text-[11px] text-gray-400 hover:text-red-500 ml-auto inline-flex items-center gap-1"><Trash2 size={11} /> ลบ</button>
+          </div>
+        </>
+      )}
     </div>
   )
 }

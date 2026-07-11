@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { isLoggedIn } from './lib/auth'
+import { VoiceRecorderProvider } from './components/VoiceRecorder'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -19,6 +20,7 @@ function Private({ children }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <VoiceRecorderProvider>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -44,6 +46,7 @@ export default function App() {
           }
         />
       </Routes>
+      </VoiceRecorderProvider>
     </BrowserRouter>
   )
 }
