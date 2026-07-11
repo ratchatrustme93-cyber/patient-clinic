@@ -155,19 +155,32 @@ model Material {
 
 // ── Patients ──
 model Patient {
-  id        Int       @id @default(autoincrement())
-  hn        String    @unique
-  name      String
-  gender    Gender?
-  birthdate DateTime?
-  phone     String?
-  email     String?
-  address   String?
-  bloodType String?
-  allergies String?
-  chronic   String?
-  note      String?
-  createdAt DateTime  @default(now())
+  id            Int       @id @default(autoincrement())
+  hn            String    @unique
+  title         String?
+  name          String
+  nationalId    String?
+  photo         String?   @db.Text
+  gender        Gender?
+  birthdate     DateTime?
+  nationality   String?
+  religion      String?
+  maritalStatus String?
+  occupation    String?
+  phone         String?
+  email         String?
+  address       String?
+  bloodType     String?
+  weight        Float?
+  height        Float?
+  insurance     String?
+  allergies     String?
+  chronic       String?
+  emergencyName     String?
+  emergencyPhone    String?
+  emergencyRelation String?
+  note          String?
+  createdAt     DateTime  @default(now())
 
   appointments Appointment[]
   visits       Visit[]

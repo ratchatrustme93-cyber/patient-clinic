@@ -25,7 +25,7 @@ export default function Dashboard() {
     api.get('/overview').then(r => setData(r.data))
   }, [])
 
-  if (!data) return <div className="p-6 text-gray-400 text-sm">กำลังโหลด...</div>
+  if (!data) return <div className="p-6 text-gray-500 text-sm">กำลังโหลด...</div>
   const c = data.counts
 
   return (
@@ -65,7 +65,7 @@ export default function Dashboard() {
                     <div key={a.id} className="flex items-center justify-between text-sm border-b border-gray-50 last:border-0 py-1.5">
                       <span className="text-gray-800">
                         {format(new Date(a.scheduledAt), 'HH:mm')}{a.endAt ? `–${format(new Date(a.endAt), 'HH:mm')}` : ''} · {a.patient.name}
-                        <span className="text-gray-400">{a.service ? ` · ${a.service.name}` : ''}</span>
+                        <span className="text-gray-500">{a.service ? ` · ${a.service.name}` : ''}</span>
                       </span>
                       <Badge tone={tone}>{label}</Badge>
                     </div>

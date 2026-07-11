@@ -2,10 +2,21 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Plus, ChevronRight } from 'lucide-react'
 import api from '../lib/api'
-import { PageHeader, Btn, Modal, Field, inputCls, Empty, Badge, TagInput } from '../components/ui'
+import { PageHeader, Btn, Modal, Empty, Badge, Card, inputCls } from '../components/ui'
+import { PatientFields, EMPTY_PATIENT } from '../components/PatientForm'
 
 const GENDER = { MALE: 'ชาย', FEMALE: 'หญิง', OTHER: 'อื่นๆ' }
-const EMPTY = { name: '', gender: '', birthdate: '', phone: '', email: '', address: '', bloodType: '', allergies: '', chronic: '', note: '' }
+const EMPTY = EMPTY_PATIENT
+
+// คำนวณอายุจากวันเกิด · null ถ้าไม่มีข้อมูล
+const age = d => {
+  if (!d) return null
+  const b = new Date(d), n = new Date()
+  let a = n.getFullYear() - b.getFullYear()
+  const m = n.getMonth() - b.getMonth()
+  if (m < 0 || (m === 0 && n.getDate() < b.getDate())) a--
+  return a
+}
 
 export default function Patients() {
   const nav = useNavigate()
@@ -15,7 +26,6 @@ export default function Patients() {
   const [form, setForm] = useState(EMPTY)
   const [saving, setSaving] = useState(false)
 
-  const set = f => e => setForm(p => ({ ...p, [f]: e.target.value }))
   const fetch = () => api.get(`/patients${search ? `?search=${encodeURIComponent(search)}` : ''}`).then(r => setList(r.data))
   useEffect(() => { fetch() }, [search])
 
@@ -28,55 +38,64 @@ export default function Patients() {
   }
 
   return (
-    <div className="p-6 mx-auto max-w-4xl">
+    <div className="p-6 mx-auto max-w-5xl">
       <PageHeader title="คนไข้" subtitle={`${list.length} รายชื่อ`}>
         <Btn onClick={() => { setForm(EMPTY); setOpen(true) }}><Plus size={14} className="inline mr-1" /> เพิ่มคนไข้</Btn>
       </PageHeader>
 
       <div className="relative mb-4">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
         <input className={inputCls + ' pl-9'} placeholder="ค้นหาชื่อ, HN, เบอร์โทร..." value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
-      <div className="space-y-2">
-        {list.map(p => (
-          <div key={p.id} onClick={() => nav(`/patients/${p.id}`)}
-            className="bg-white rounded-xl p-4 border border-gray-100 flex items-center gap-3 cursor-pointer hover:border-brand-200 transition">
-            <div className="w-10 h-10 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 font-semibold text-sm flex-shrink-0">
-              {p.name[0]}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-gray-800 text-sm">{p.name}</p>
-              <p className="text-xs text-gray-400">{p.hn}{p.phone ? ` · ${p.phone}` : ''}{p.gender ? ` · ${GENDER[p.gender]}` : ''}</p>
-            </div>
-            {p.allergies && <Badge tone="red">แพ้ยา</Badge>}
-            <ChevronRight size={16} className="text-gray-300" />
-          </div>
-        ))}
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm whitespace-nowrap">
+            <thead>
+              <tr className="text-left text-gray-500 bg-gray-50 border-b border-gray-200">
+                <th className="px-4 py-3 font-medium">HN</th>
+                <th className="px-4 py-3 font-medium">ชื่อ-นามสกุล</th>
+                <th className="px-4 py-3 font-medium">เพศ</th>
+                <th className="px-4 py-3 font-medium text-center">อายุ</th>
+                <th className="px-4 py-3 font-medium">เบอร์โทร</th>
+                <th className="px-4 py-3 font-medium text-center">กรุ๊ปเลือด</th>
+                <th className="px-4 py-3 font-medium">สถานะ</th>
+                <th className="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {list.map(p => (
+                <tr key={p.id} onClick={() => nav(`/patients/${p.id}`)}
+                  className="border-b border-gray-100 last:border-0 cursor-pointer hover:bg-brand-50/60 transition">
+                  <td className="px-4 py-3 font-mono text-xs text-gray-500">{p.hn}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-8 h-8 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 font-semibold text-xs flex-shrink-0">{p.name[0]}</span>
+                      <span className="font-medium text-gray-800">{p.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">{GENDER[p.gender] || '—'}</td>
+                  <td className="px-4 py-3 text-center text-gray-600">{age(p.birthdate) ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-600">{p.phone || '—'}</td>
+                  <td className="px-4 py-3 text-center text-gray-600">{p.bloodType || '—'}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {p.allergies && <Badge tone="red">แพ้ยา</Badge>}
+                      {p.chronic && <Badge tone="amber">โรคประจำตัว</Badge>}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right"><ChevronRight size={16} className="text-gray-400 inline" /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         {list.length === 0 && <Empty>ไม่พบข้อมูลคนไข้</Empty>}
-      </div>
+      </Card>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="เพิ่มคนไข้ใหม่">
+      <Modal open={open} onClose={() => setOpen(false)} title="เพิ่มคนไข้ใหม่" wide>
         <form onSubmit={save} className="space-y-3">
-          <Field label="ชื่อ-นามสกุล *"><input required className={inputCls} value={form.name} onChange={set('name')} /></Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="เพศ">
-              <select className={inputCls} value={form.gender} onChange={set('gender')}>
-                <option value="">ไม่ระบุ</option>
-                <option value="MALE">ชาย</option>
-                <option value="FEMALE">หญิง</option>
-                <option value="OTHER">อื่นๆ</option>
-              </select>
-            </Field>
-            <Field label="วันเกิด"><input type="date" className={inputCls} value={form.birthdate} onChange={set('birthdate')} /></Field>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="เบอร์โทร"><input className={inputCls} value={form.phone} onChange={set('phone')} /></Field>
-            <Field label="กรุ๊ปเลือด"><input className={inputCls} value={form.bloodType} onChange={set('bloodType')} placeholder="A, B, O, AB" /></Field>
-          </div>
-          <Field label="ที่อยู่"><input className={inputCls} value={form.address} onChange={set('address')} /></Field>
-          <Field label="ประวัติแพ้ยา/สาร (คั่นด้วย ,)"><TagInput value={form.allergies} onChange={v => setForm(p => ({ ...p, allergies: v }))} placeholder="เช่น Penicillin, Aspirin" /></Field>
-          <Field label="โรคประจำตัว (คั่นด้วย ,)"><TagInput value={form.chronic} onChange={v => setForm(p => ({ ...p, chronic: v }))} placeholder="เช่น เบาหวาน, ไขมัน, หัวใจ" /></Field>
+          <PatientFields form={form} setForm={setForm} />
           <div className="flex gap-2 pt-2">
             <Btn type="button" variant="ghost" className="flex-1" onClick={() => setOpen(false)}>ยกเลิก</Btn>
             <Btn type="submit" disabled={saving} className="flex-1">{saving ? 'กำลังบันทึก...' : 'บันทึก'}</Btn>

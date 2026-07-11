@@ -23,8 +23,8 @@ export default function Layout({ children }) {
   const { pathname } = useLocation()
 
   return (
-    <div className="flex flex-col h-screen bg-[#f6f8f9]">
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-100 shadow-sm">
+    <div className="flex flex-col h-screen bg-[#e8edf2]">
+      <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
         {/* accent bar */}
         <div className="h-1" style={{ background: 'linear-gradient(90deg, #14b8a6 0%, #22c55e 42%, #38bdf8 100%)' }} />
 
@@ -37,7 +37,7 @@ export default function Layout({ children }) {
               </div>
               <div className="leading-none">
                 <p className="font-semibold text-gray-800">Patient Clinic</p>
-                <p className="text-[11px] text-gray-400 mt-1">ระบบจัดการคลินิก</p>
+                <p className="text-[11px] text-gray-500 mt-1">ระบบจัดการคลินิก</p>
               </div>
             </NavLink>
 
@@ -64,7 +64,7 @@ export default function Layout({ children }) {
           {/* nav */}
           <nav
             aria-label="เมนูหลัก"
-            className="flex items-center gap-1 py-2 border-t border-gray-100 overflow-x-auto [scrollbar-width:thin]"
+            className="flex items-center gap-1 py-2 border-t border-gray-200 overflow-x-auto [scrollbar-width:thin]"
           >
             {NAV.filter(i => !i.manage || canManage(user)).map(({ to, icon: Icon, label }) => (
               <NavLink

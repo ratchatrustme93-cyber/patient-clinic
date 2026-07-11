@@ -1,13 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { format } from 'date-fns'
+import { format, differenceInYears } from 'date-fns'
 import { th } from 'date-fns/locale'
-import { ArrowLeft, Pencil, Plus, FileText, Calendar, Receipt, Printer } from 'lucide-react'
+import { ArrowLeft, Pencil, Plus, FileText, Calendar, Receipt, Printer, AlertTriangle, User, Eye, EyeOff } from 'lucide-react'
 import api from '../lib/api'
-import { PageHeader, Btn, Modal, Field, inputCls, Empty, Badge, Card, TagInput } from '../components/ui'
+import { PageHeader, Btn, Modal, Field, inputCls, Empty, Badge, Card, TagInput, StatTile } from '../components/ui'
+import { PatientFields, EMPTY_PATIENT, maskId } from '../components/PatientForm'
 
 const GENDER = { MALE: 'ชาย', FEMALE: 'หญิง', OTHER: 'อื่นๆ' }
 const APPT = { SCHEDULED: 'นัดไว้', CONFIRMED: 'ยืนยัน', ARRIVED: 'มาถึง', IN_PROGRESS: 'กำลังตรวจ', COMPLETED: 'เสร็จ', CANCELLED: 'ยกเลิก', NO_SHOW: 'ไม่มา' }
+const TABS = [
+  { key: 'personal', label: 'ประวัติส่วนตัว', icon: User },
+  { key: 'treatment', label: 'ประวัติการรักษา', icon: FileText },
+  { key: 'billing', label: 'ค่าใช้จ่าย', icon: Receipt },
+]
 
 export default function PatientDetail() {
   const { id } = useParams()
@@ -18,6 +24,7 @@ export default function PatientDetail() {
   const [methods, setMethods] = useState([])
   const [modal, setModal] = useState(null) // 'edit' | 'report' | 'bill'
   const [viewReport, setViewReport] = useState(null)
+  const [tab, setTab] = useState('personal')
 
   const fetch = () => api.get(`/patients/${id}`).then(r => setPatient(r.data))
   useEffect(() => {
@@ -27,96 +34,199 @@ export default function PatientDetail() {
     api.get('/master/payment-methods').then(r => setMethods(r.data))
   }, [id])
 
-  if (!patient) return <div className="p-6 text-gray-400 text-sm">กำลังโหลด...</div>
+  if (!patient) return <div className="p-6 text-gray-500 text-sm">กำลังโหลด...</div>
+
+  const ageText = patient.birthdate ? `${differenceInYears(new Date(), new Date(patient.birthdate))} ปี` : '—'
+  const chronicList = (patient.chronic || '').split(',').map(c => c.trim()).filter(Boolean)
+  const outstanding = patient.bills.filter(b => b.status === 'UNPAID').reduce((s, b) => s + b.total, 0)
 
   return (
     <div className="p-6 mx-auto max-w-3xl">
-      <button onClick={() => nav(-1)} className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-4">
+      <button onClick={() => nav(-1)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-600 mb-4">
         <ArrowLeft size={14} /> กลับ
       </button>
 
-      {/* Info */}
+      {/* Identity — always visible */}
       <Card className="p-5 mb-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 font-bold text-xl">{patient.name[0]}</div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-800">{patient.name}</h2>
-              <p className="text-sm text-gray-400">
-                {patient.hn}{patient.gender ? ` · ${GENDER[patient.gender]}` : ''}{patient.phone ? ` · ${patient.phone}` : ''}
-              </p>
-              <div className="flex gap-1.5 mt-1">
-                {patient.bloodType && <Badge tone="blue">กรุ๊ป {patient.bloodType}</Badge>}
-                {patient.chronic && patient.chronic.split(',').map(c => c.trim()).filter(Boolean).map(c => <Badge key={c} tone="amber">{c}</Badge>)}
-              </div>
-            </div>
+        <div className="flex items-start gap-4">
+          <div className="w-16 h-16 rounded-full bg-brand-50 overflow-hidden flex items-center justify-center text-brand-600 font-bold text-2xl flex-shrink-0">
+            {patient.photo ? <img src={patient.photo} alt={patient.name} className="w-full h-full object-cover" /> : patient.name[0]}
           </div>
-          <Btn variant="ghost" onClick={() => setModal('edit')}><Pencil size={13} className="inline mr-1" /> แก้ไข</Btn>
-        </div>
-        {patient.allergies && <div className="mt-3 bg-red-50 rounded-lg px-3 py-2 text-xs text-red-600">⚠️ แพ้: {patient.allergies}</div>}
-        {patient.address && <p className="mt-2 text-xs text-gray-400">ที่อยู่: {patient.address}</p>}
-      </Card>
-
-      {/* Reports / visits */}
-      <Section title="ใบรายงาน / การรักษา" icon={FileText}
-        action={<Btn onClick={() => setModal('report')}><Plus size={13} className="inline mr-1" /> บันทึกการรักษา</Btn>}>
-        {patient.visits.length === 0 ? <Empty>ยังไม่มีประวัติการรักษา</Empty> : (
-          <div className="space-y-2">
-            {patient.visits.map(v => (
-              <div key={v.id} className="border border-gray-100 rounded-xl p-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-gray-800">{format(new Date(v.visitDate), 'd MMM yyyy', { locale: th })} · {v.diagnosis || 'ยังไม่วินิจฉัย'}</p>
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => setViewReport(v)} className="text-xs text-brand-600 hover:underline">ดูรายงาน</button>
-                    {!v.bill && <button onClick={() => setModal({ bill: true, visitId: v.id })} className="text-xs text-brand-600 hover:underline ml-2">+ ออกบิล</button>}
-                  </div>
-                </div>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  {v.doctor ? `${v.doctor.name}` : ''}{v.chiefComplaint ? ` · อาการ: ${v.chiefComplaint}` : ''}
-                  {v.bill ? ` · บิล ${v.bill.billNo}` : ''}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-800">{patient.title ? `${patient.title} ` : ''}{patient.name}</h2>
+                <p className="text-sm text-gray-500">
+                  <span className="font-mono">{patient.hn}</span>
+                  {[GENDER[patient.gender], ageText !== '—' ? ageText : null].filter(Boolean).map(t => <span key={t}> · {t}</span>)}
                 </p>
               </div>
-            ))}
+              <Btn variant="ghost" onClick={() => setModal('edit')}><Pencil size={13} className="inline mr-1" /> แก้ไข</Btn>
+            </div>
+          </div>
+        </div>
+        {patient.allergies && (
+          <div className="mt-4 flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-700">
+            <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
+            <span><span className="font-semibold">แพ้ยา/สาร:</span> {patient.allergies}</span>
           </div>
         )}
-      </Section>
+      </Card>
 
-      {/* Appointments */}
-      <Section title="ประวัตินัดหมาย" icon={Calendar}>
-        {patient.appointments.length === 0 ? <Empty>ยังไม่มีนัด</Empty> : (
-          <div className="space-y-1.5">
-            {patient.appointments.map(a => (
-              <div key={a.id} className="flex items-center justify-between text-sm border-b border-gray-50 last:border-0 py-1.5">
-                <span className="text-gray-800">
-                  {format(new Date(a.scheduledAt), 'd MMM yyyy HH:mm', { locale: th })}{a.endAt ? `–${format(new Date(a.endAt), 'HH:mm')}` : ''}
-                  <span className="text-gray-400">{a.service ? ` · ${a.service.name}` : ''}{a.doctor ? ` · ${a.doctor.name}` : ''}</span>
-                </span>
-                <Badge tone={a.status === 'COMPLETED' ? 'green' : a.status === 'CANCELLED' ? 'gray' : 'blue'}>{APPT[a.status]}</Badge>
-              </div>
-            ))}
-          </div>
-        )}
-      </Section>
+      {/* Summary — always visible */}
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <StatTile icon={FileText} label="ประวัติการรักษา" value={patient.visits.length} tone="brand" />
+        <StatTile icon={Calendar} label="นัดหมาย" value={patient.appointments.length} tone="blue" />
+        <StatTile icon={Receipt} label="ยอดค้างชำระ" value={`฿${outstanding.toLocaleString()}`} tone="amber" />
+      </div>
 
-      {/* Bills */}
-      <Section title="บิล / การชำระเงิน" icon={Receipt}
-        action={<Btn variant="ghost" onClick={() => setModal({ bill: true })}><Plus size={13} className="inline mr-1" /> สร้างบิล</Btn>}>
-        {patient.bills.length === 0 ? <Empty>ยังไม่มีบิล</Empty> : (
-          <div className="space-y-1.5">
-            {patient.bills.map(b => (
-              <div key={b.id} className="flex items-center justify-between text-sm border-b border-gray-50 last:border-0 py-1.5">
-                <span className="text-gray-800">{b.billNo} · {format(new Date(b.date), 'd MMM yyyy', { locale: th })}</span>
-                <span className="flex items-center gap-2">
-                  <span className="text-gray-600">฿{b.total.toLocaleString()}</span>
-                  <Badge tone={b.status === 'PAID' ? 'green' : b.status === 'UNPAID' ? 'amber' : 'gray'}>
-                    {b.status === 'PAID' ? 'ชำระแล้ว' : b.status === 'UNPAID' ? 'ค้างชำระ' : b.status}
-                  </Badge>
-                </span>
-              </div>
-            ))}
+      {/* Tab bar */}
+      <div className="flex items-center gap-1 mb-4 border-b border-gray-200 overflow-x-auto [scrollbar-width:thin]">
+        {TABS.map(({ key, label, icon: Icon }) => {
+          const count = key === 'treatment' ? patient.visits.length : key === 'billing' ? patient.bills.length : null
+          return (
+            <button key={key} onClick={() => setTab(key)}
+              className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm whitespace-nowrap border-b-2 -mb-px transition ${
+                tab === key ? 'border-brand-600 text-brand-700 font-medium' : 'border-transparent text-gray-500 hover:text-gray-800'
+              }`}>
+              <Icon size={16} /> {label}
+              {count > 0 && <span className={`text-xs px-1.5 rounded-full ${tab === key ? 'bg-brand-100 text-brand-700' : 'bg-gray-100 text-gray-500'}`}>{count}</span>}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Tab: ประวัติส่วนตัว */}
+      {tab === 'personal' && (
+        <Card className="p-5 space-y-5">
+          <div>
+            <p className="text-sm font-semibold text-gray-700 mb-3">ข้อมูลทั่วไป</p>
+            <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-4">
+              <Fact label="เพศ" value={GENDER[patient.gender] || '—'} />
+              <Fact label="อายุ" value={ageText} />
+              <Fact label="วันเกิด" value={patient.birthdate ? format(new Date(patient.birthdate), 'd MMM yyyy', { locale: th }) : '—'} />
+              <NationalIdFact value={patient.nationalId} />
+              <Fact label="สัญชาติ" value={patient.nationality || '—'} />
+              <Fact label="ศาสนา" value={patient.religion || '—'} />
+              <Fact label="สถานภาพ" value={patient.maritalStatus || '—'} />
+              <Fact label="อาชีพ" value={patient.occupation || '—'} />
+            </dl>
           </div>
-        )}
-      </Section>
+
+          <div className="pt-4 border-t border-gray-100">
+            <p className="text-sm font-semibold text-gray-700 mb-3">ข้อมูลติดต่อ</p>
+            <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-4">
+              <Fact label="เบอร์โทร" value={patient.phone || '—'} />
+              <Fact label="อีเมล" value={patient.email || '—'} />
+              <div className="col-span-2 sm:col-span-3"><Fact label="ที่อยู่" value={patient.address || '—'} /></div>
+            </dl>
+          </div>
+
+          <div className="pt-4 border-t border-gray-100">
+            <p className="text-sm font-semibold text-gray-700 mb-3">ข้อมูลสุขภาพ</p>
+            <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-4">
+              <Fact label="กรุ๊ปเลือด" value={patient.bloodType || '—'} />
+              <Fact label="น้ำหนัก" value={patient.weight ? `${patient.weight} กก.` : '—'} />
+              <Fact label="ส่วนสูง" value={patient.height ? `${patient.height} ซม.` : '—'} />
+              <Fact label="สิทธิการรักษา" value={patient.insurance || '—'} />
+            </dl>
+            <div className="mt-4">
+              <p className="text-xs text-gray-500 mb-1.5">โรคประจำตัว</p>
+              {chronicList.length > 0
+                ? <div className="flex flex-wrap gap-1.5">{chronicList.map(c => <Badge key={c} tone="amber">{c}</Badge>)}</div>
+                : <p className="text-sm text-gray-400">—</p>}
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-gray-100">
+            <p className="text-sm font-semibold text-gray-700 mb-3">ผู้ติดต่อกรณีฉุกเฉิน</p>
+            {patient.emergencyName || patient.emergencyPhone ? (
+              <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-4">
+                <Fact label="ชื่อ-นามสกุล" value={patient.emergencyName || '—'} />
+                <Fact label="ความสัมพันธ์" value={patient.emergencyRelation || '—'} />
+                <Fact label="เบอร์โทร" value={patient.emergencyPhone || '—'} />
+              </dl>
+            ) : <p className="text-sm text-gray-400">—</p>}
+          </div>
+
+          {patient.note && (
+            <div className="pt-4 border-t border-gray-100">
+              <p className="text-xs text-gray-500 mb-1.5">หมายเหตุ</p>
+              <p className="text-sm text-gray-800 whitespace-pre-wrap">{patient.note}</p>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Tab: ประวัติการรักษา / รายงานการรักษา */}
+      {tab === 'treatment' && (
+        <>
+          <Section title="ใบรายงาน / การรักษา" icon={FileText}
+            action={<Btn onClick={() => setModal('report')}><Plus size={13} className="inline mr-1" /> บันทึกการรักษา</Btn>}>
+            {patient.visits.length === 0 ? <Empty>ยังไม่มีประวัติการรักษา</Empty> : (
+              <div className="space-y-2">
+                {patient.visits.map(v => (
+                  <div key={v.id} className="border border-gray-200 rounded-xl p-3.5 hover:border-brand-200 transition">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-800">{v.diagnosis || 'ยังไม่วินิจฉัย'}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {format(new Date(v.visitDate), 'd MMM yyyy', { locale: th })}{v.doctor ? ` · ${v.doctor.name}` : ''}
+                        </p>
+                        {v.chiefComplaint && <p className="text-xs text-gray-500 mt-0.5">อาการ: {v.chiefComplaint}</p>}
+                      </div>
+                      <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                        <button onClick={() => setViewReport(v)} className="text-xs text-brand-600 hover:underline">ดูรายงาน</button>
+                        {v.bill
+                          ? <Badge tone="gray">บิล {v.bill.billNo}</Badge>
+                          : <button onClick={() => setModal({ bill: true, visitId: v.id })} className="text-xs text-brand-600 hover:underline">+ ออกบิล</button>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Section>
+
+          <Section title="ประวัตินัดหมาย" icon={Calendar}>
+            {patient.appointments.length === 0 ? <Empty>ยังไม่มีนัด</Empty> : (
+              <div className="space-y-1.5">
+                {patient.appointments.map(a => (
+                  <div key={a.id} className="flex items-center justify-between text-sm border-b border-gray-100 last:border-0 py-1.5">
+                    <span className="text-gray-800">
+                      {format(new Date(a.scheduledAt), 'd MMM yyyy HH:mm', { locale: th })}{a.endAt ? `–${format(new Date(a.endAt), 'HH:mm')}` : ''}
+                      <span className="text-gray-500">{a.service ? ` · ${a.service.name}` : ''}{a.doctor ? ` · ${a.doctor.name}` : ''}</span>
+                    </span>
+                    <Badge tone={a.status === 'COMPLETED' ? 'green' : a.status === 'CANCELLED' ? 'gray' : 'blue'}>{APPT[a.status]}</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Section>
+        </>
+      )}
+
+      {/* Tab: ค่าใช้จ่าย */}
+      {tab === 'billing' && (
+        <Section title="บิล / การชำระเงิน" icon={Receipt}
+          action={<Btn variant="ghost" onClick={() => setModal({ bill: true })}><Plus size={13} className="inline mr-1" /> สร้างบิล</Btn>}>
+          {patient.bills.length === 0 ? <Empty>ยังไม่มีบิล</Empty> : (
+            <div className="space-y-1.5">
+              {patient.bills.map(b => (
+                <div key={b.id} className="flex items-center justify-between text-sm border-b border-gray-100 last:border-0 py-1.5">
+                  <span className="text-gray-800">{b.billNo} · {format(new Date(b.date), 'd MMM yyyy', { locale: th })}</span>
+                  <span className="flex items-center gap-2">
+                    <span className="text-gray-600">฿{b.total.toLocaleString()}</span>
+                    <Badge tone={b.status === 'PAID' ? 'green' : b.status === 'UNPAID' ? 'amber' : 'gray'}>
+                      {b.status === 'PAID' ? 'ชำระแล้ว' : b.status === 'UNPAID' ? 'ค้างชำระ' : b.status}
+                    </Badge>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
+      )}
 
       {modal === 'edit' && <EditModal patient={patient} onClose={() => setModal(null)} onSaved={() => { setModal(null); fetch() }} />}
       {modal === 'report' && (
@@ -129,6 +239,33 @@ export default function PatientDetail() {
           onClose={() => setModal(null)} onSaved={() => { setModal(null); fetch() }} />
       )}
       {viewReport && <ViewReportModal visit={viewReport} patient={patient} onClose={() => setViewReport(null)} />}
+    </div>
+  )
+}
+
+function Fact({ label, value }) {
+  return (
+    <div>
+      <dt className="text-xs text-gray-500">{label}</dt>
+      <dd className="text-sm text-gray-800 mt-0.5">{value}</dd>
+    </div>
+  )
+}
+
+// เลขบัตร ปชช. แสดงแบบซ่อน (xxxxxxxxxx111) มีปุ่มตาเปิดดูชั่วคราว
+function NationalIdFact({ value }) {
+  const [reveal, setReveal] = useState(false)
+  return (
+    <div>
+      <dt className="text-xs text-gray-500">เลขบัตรประชาชน</dt>
+      <dd className="text-sm text-gray-800 mt-0.5 flex items-center gap-2">
+        <span className="font-mono tracking-wider">{value ? (reveal ? value : maskId(value)) : '—'}</span>
+        {value && (
+          <button type="button" onClick={() => setReveal(r => !r)} className="text-gray-400 hover:text-gray-600">
+            {reveal ? <EyeOff size={14} /> : <Eye size={14} />}
+          </button>
+        )}
+      </dd>
     </div>
   )
 }
@@ -147,32 +284,19 @@ function Section({ title, icon: Icon, action, children }) {
 
 function EditModal({ patient, onClose, onSaved }) {
   const [form, setForm] = useState({
-    name: patient.name, gender: patient.gender || '',
+    ...EMPTY_PATIENT,
+    ...Object.fromEntries(Object.keys(EMPTY_PATIENT).map(k => [k, patient[k] ?? ''])),
     birthdate: patient.birthdate ? format(new Date(patient.birthdate), 'yyyy-MM-dd') : '',
-    phone: patient.phone || '', email: patient.email || '', address: patient.address || '',
-    bloodType: patient.bloodType || '', allergies: patient.allergies || '', chronic: patient.chronic || '', note: patient.note || '',
   })
   const [saving, setSaving] = useState(false)
-  const set = f => e => setForm(p => ({ ...p, [f]: e.target.value }))
   async function save(e) {
     e.preventDefault(); setSaving(true)
     try { await api.put(`/patients/${patient.id}`, form); onSaved() } finally { setSaving(false) }
   }
   return (
-    <Modal open onClose={onClose} title="แก้ไขข้อมูลคนไข้">
+    <Modal open onClose={onClose} title="แก้ไขข้อมูลคนไข้" wide>
       <form onSubmit={save} className="space-y-3">
-        <Field label="ชื่อ-นามสกุล *"><input required className={inputCls} value={form.name} onChange={set('name')} /></Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="เพศ">
-            <select className={inputCls} value={form.gender} onChange={set('gender')}>
-              <option value="">ไม่ระบุ</option><option value="MALE">ชาย</option><option value="FEMALE">หญิง</option><option value="OTHER">อื่นๆ</option>
-            </select>
-          </Field>
-          <Field label="เบอร์โทร"><input className={inputCls} value={form.phone} onChange={set('phone')} /></Field>
-        </div>
-        <Field label="ที่อยู่"><input className={inputCls} value={form.address} onChange={set('address')} /></Field>
-        <Field label="แพ้ยา/สาร (คั่นด้วย ,)"><TagInput value={form.allergies} onChange={v => setForm(p => ({ ...p, allergies: v }))} placeholder="เช่น Penicillin, Aspirin" /></Field>
-        <Field label="โรคประจำตัว (คั่นด้วย ,)"><TagInput value={form.chronic} onChange={v => setForm(p => ({ ...p, chronic: v }))} placeholder="เช่น เบาหวาน, ไขมัน, หัวใจ" /></Field>
+        <PatientFields form={form} setForm={setForm} />
         <div className="flex gap-2 pt-2">
           <Btn type="button" variant="ghost" className="flex-1" onClick={onClose}>ยกเลิก</Btn>
           <Btn type="submit" disabled={saving} className="flex-1">{saving ? 'กำลังบันทึก...' : 'บันทึก'}</Btn>
@@ -256,13 +380,13 @@ function BillModal({ patientId, visitId, services, methods, onClose, onSaved }) 
               <input className={inputCls + ' col-span-5'} placeholder="รายการ" value={l.description} onChange={e => setLine(i, 'description', e.target.value)} />
               <input type="number" className={inputCls + ' col-span-2'} placeholder="จำนวน" value={l.qty} onChange={e => setLine(i, 'qty', e.target.value)} />
               <input type="number" className={inputCls + ' col-span-2'} placeholder="ราคา" value={l.unitPrice} onChange={e => setLine(i, 'unitPrice', e.target.value)} />
-              <button type="button" onClick={() => rmLine(i)} className="col-span-1 text-gray-300 hover:text-red-500 text-lg">×</button>
+              <button type="button" onClick={() => rmLine(i)} className="col-span-1 text-gray-400 hover:text-red-500 text-lg">×</button>
             </div>
           ))}
         </div>
         <button type="button" onClick={addLine} className="text-xs text-brand-600 hover:underline">+ เพิ่มรายการ</button>
 
-        <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-100">
+        <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-200">
           <span className="text-sm text-gray-500">ส่วนลด</span>
           <input type="number" className={inputCls + ' w-28'} value={discount} onChange={e => setDiscount(e.target.value)} />
         </div>
@@ -283,9 +407,9 @@ function ViewReportModal({ visit, patient, onClose }) {
   return (
     <Modal open onClose={onClose} title="ใบรายงานคนไข้ (Patient Report)" wide>
       <div id="report-print" className="space-y-3 text-sm">
-        <div className="border-b border-gray-100 pb-3">
+        <div className="border-b border-gray-200 pb-3">
           <p className="text-lg font-semibold text-brand-700">Patient Clinic</p>
-          <p className="text-xs text-gray-400">ใบรายงานการรักษา · {format(new Date(visit.visitDate), 'd MMMM yyyy', { locale: th })}</p>
+          <p className="text-xs text-gray-500">ใบรายงานการรักษา · {format(new Date(visit.visitDate), 'd MMMM yyyy', { locale: th })}</p>
         </div>
         <Row label="คนไข้" value={`${patient.name} (${patient.hn})`} />
         <Row label="แพทย์" value={visit.doctor?.name || '-'} />
@@ -305,7 +429,7 @@ function ViewReportModal({ visit, patient, onClose }) {
 function Row({ label, value }) {
   return (
     <div className="flex gap-3">
-      <span className="text-gray-400 w-28 flex-shrink-0">{label}</span>
+      <span className="text-gray-500 w-28 flex-shrink-0">{label}</span>
       <span className="text-gray-800">{value}</span>
     </div>
   )

@@ -26,17 +26,17 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f6f8f9] p-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#e8edf2] p-4">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-6">
           <div className="w-12 h-12 rounded-xl bg-brand-600 text-white flex items-center justify-center mb-3">
             <HeartPulse size={24} />
           </div>
           <h1 className="text-lg font-semibold text-gray-800">Patient Clinic</h1>
-          <p className="text-sm text-gray-400">ระบบจัดการคลินิก</p>
+          <p className="text-sm text-gray-500">ระบบจัดการคลินิก</p>
         </div>
 
-        <form onSubmit={submit} className="bg-white rounded-2xl border border-gray-100 p-6 space-y-3">
+        <form onSubmit={submit} className="bg-white rounded-2xl border border-gray-200 p-6 space-y-3">
           <div>
             <label className="text-sm text-gray-600 block mb-1">อีเมล</label>
             <input className={inputCls} type="email" required value={form.email}
@@ -51,7 +51,7 @@ export default function Login() {
           <Btn type="submit" disabled={loading} className="w-full">{loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}</Btn>
         </form>
 
-        <div className="mt-4 text-xs text-gray-400 bg-white/60 rounded-lg p-3 border border-gray-100">
+        <div className="mt-4 text-xs text-gray-500 bg-white/60 rounded-lg p-3 border border-gray-200">
           <p className="font-medium text-gray-500 mb-1">บัญชีทดสอบ (seed):</p>
           <p>master@clinic.local / master123 · admin@clinic.local / admin123</p>
           <p>doctor@clinic.local / doctor123 · employee@clinic.local / employee123</p>

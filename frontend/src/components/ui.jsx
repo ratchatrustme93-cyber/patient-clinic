@@ -53,7 +53,7 @@ export function PageHeader({ title, subtitle, children }) {
     <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
       <div>
         <h1 className="text-xl font-semibold text-gray-800">{title}</h1>
-        {subtitle && <p className="text-sm text-gray-400 mt-0.5">{subtitle}</p>}
+        {subtitle && <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>}
       </div>
       {children}
     </div>
@@ -86,7 +86,7 @@ export function Modal({ open, onClose, title, children, wide }) {
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-gray-800">{title}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-600"><X size={18} /></button>
         </div>
         {children}
       </div>
@@ -113,13 +113,13 @@ export function StatTile({ icon: Icon, label, value, tone = 'brand' }) {
     gray: 'text-gray-600 bg-gray-100',
   }
   return (
-    <div className="bg-white rounded-xl p-4 border border-gray-100 flex items-center gap-3">
+    <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm flex items-center gap-3">
       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${tones[tone]}`}>
         <Icon size={18} />
       </div>
       <div>
         <p className="text-xl font-semibold text-gray-800 leading-none">{value ?? 0}</p>
-        <p className="text-xs text-gray-400 mt-1">{label}</p>
+        <p className="text-xs text-gray-500 mt-1">{label}</p>
       </div>
     </div>
   )
@@ -139,9 +139,9 @@ export function Badge({ children, tone = 'gray' }) {
 }
 
 export function Empty({ children = 'ยังไม่มีข้อมูล' }) {
-  return <p className="text-sm text-gray-300 py-10 text-center">{children}</p>
+  return <p className="text-sm text-gray-400 py-10 text-center">{children}</p>
 }
 
 export function Card({ children, className = '' }) {
-  return <div className={`bg-white rounded-xl border border-gray-100 ${className}`}>{children}</div>
+  return <div className={`bg-white rounded-xl border border-gray-200 shadow-sm ${className}`}>{children}</div>
 }

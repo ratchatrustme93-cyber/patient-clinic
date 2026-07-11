@@ -49,7 +49,7 @@ export default function Items() {
       </PageHeader>
 
       <div className="relative mb-4">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
         <input className={inputCls + ' pl-9'} placeholder="ค้นหาชื่อ, รหัส..." value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
@@ -57,7 +57,7 @@ export default function Items() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-gray-400 border-b border-gray-100">
+              <tr className="text-left text-xs text-gray-500 border-b border-gray-200">
                 <th className="px-4 py-2 font-medium">รหัส/ชื่อ</th>
                 <th className="px-4 py-2 font-medium">หมวด</th>
                 <th className="px-4 py-2 font-medium text-right">ราคา</th>
@@ -68,19 +68,19 @@ export default function Items() {
             <tbody>
               {filtered.map(i => (
                 <tr key={i.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
-                  <td className="px-4 py-3"><p className="text-gray-800">{i.name}</p><p className="text-xs text-gray-400">{i.code}</p></td>
+                  <td className="px-4 py-3"><p className="text-gray-800">{i.name}</p><p className="text-xs text-gray-500">{i.code}</p></td>
                   <td className="px-4 py-3 text-gray-500">{i.category?.name || '-'}</td>
                   <td className="px-4 py-3 text-right text-gray-700">฿{i.price.toLocaleString()}</td>
                   <td className="px-4 py-3 text-right"><span className={i.stockQty <= 0 ? 'text-red-500' : 'text-gray-700'}>{i.stockQty}{i.unit ? ` ${i.unit.name}` : ''}</span></td>
                   {manage && (
                     <td className="px-4 py-3 text-right whitespace-nowrap">
-                      <button onClick={() => openEdit(i)} className="p-1.5 text-gray-400 hover:text-brand-600"><Pencil size={13} /></button>
-                      <button onClick={() => remove(i.id)} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={13} /></button>
+                      <button onClick={() => openEdit(i)} className="p-1.5 text-gray-500 hover:text-brand-600"><Pencil size={13} /></button>
+                      <button onClick={() => remove(i.id)} className="p-1.5 text-gray-500 hover:text-red-500"><Trash2 size={13} /></button>
                     </td>
                   )}
                 </tr>
               ))}
-              {filtered.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-gray-300"><Package size={28} className="mx-auto mb-2 opacity-40" />ยังไม่มีสินค้า</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-gray-400"><Package size={28} className="mx-auto mb-2 opacity-40" />ยังไม่มีสินค้า</td></tr>}
             </tbody>
           </table>
         </div>

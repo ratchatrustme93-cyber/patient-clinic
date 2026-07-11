@@ -59,7 +59,7 @@ function SimpleList({ manage, path, label, placeholder }) {
           {items.map(it => (
             <div key={it.id} className="flex items-center justify-between border-b border-gray-50 last:border-0 py-2 text-sm">
               <span className="text-gray-800">{it.name}</span>
-              {manage && <button onClick={() => del(it.id)} className="text-gray-300 hover:text-red-500"><Trash2 size={13} /></button>}
+              {manage && <button onClick={() => del(it.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={13} /></button>}
             </div>
           ))}
         </div>
@@ -88,8 +88,8 @@ function NamedNote({ manage, path, nameLabel }) {
         <div className="space-y-1">
           {items.map(it => (
             <div key={it.id} className="flex items-center justify-between border-b border-gray-50 last:border-0 py-2 text-sm">
-              <span className="text-gray-800">{it.name}{it.note ? <span className="text-gray-400"> · {it.note}</span> : ''}{it.active === false ? <span className="text-gray-300"> · ปิด</span> : ''}</span>
-              {manage && <button onClick={() => del(it.id)} className="text-gray-300 hover:text-red-500"><Trash2 size={13} /></button>}
+              <span className="text-gray-800">{it.name}{it.note ? <span className="text-gray-500"> · {it.note}</span> : ''}{it.active === false ? <span className="text-gray-400"> · ปิด</span> : ''}</span>
+              {manage && <button onClick={() => del(it.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={13} /></button>}
             </div>
           ))}
         </div>
@@ -118,8 +118,8 @@ function Departments({ manage }) {
         <div className="space-y-1">
           {items.map(d => (
             <div key={d.id} className="flex items-center justify-between border-b border-gray-50 last:border-0 py-2 text-sm">
-              <span className="text-gray-800">{d.name}{d.note ? <span className="text-gray-400"> · {d.note}</span> : ''}</span>
-              {manage && <button onClick={() => del(d.id)} className="text-gray-300 hover:text-red-500"><Trash2 size={13} /></button>}
+              <span className="text-gray-800">{d.name}{d.note ? <span className="text-gray-500"> · {d.note}</span> : ''}</span>
+              {manage && <button onClick={() => del(d.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={13} /></button>}
             </div>
           ))}
         </div>
@@ -152,10 +152,10 @@ function Services({ manage }) {
         <div className="space-y-1">
           {items.map(s => (
             <div key={s.id} className="flex items-center justify-between border-b border-gray-50 last:border-0 py-2 text-sm">
-              <span className="text-gray-800">{s.code} · {s.name} <span className="text-gray-400">{s.department ? `· ${s.department.name}` : ''}</span></span>
+              <span className="text-gray-800">{s.code} · {s.name} <span className="text-gray-500">{s.department ? `· ${s.department.name}` : ''}</span></span>
               <span className="flex items-center gap-3">
                 <span className="text-gray-600">฿{s.price.toLocaleString()}</span>
-                {manage && <button onClick={() => del(s.id)} className="text-gray-300 hover:text-red-500"><Trash2 size={13} /></button>}
+                {manage && <button onClick={() => del(s.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={13} /></button>}
               </span>
             </div>
           ))}

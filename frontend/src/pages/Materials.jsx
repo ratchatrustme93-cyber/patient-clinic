@@ -45,7 +45,7 @@ export default function Materials() {
       </PageHeader>
 
       <div className="relative mb-4">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
         <input className={inputCls + ' pl-9'} placeholder="ค้นหาชื่อ, รหัส..." value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
@@ -53,7 +53,7 @@ export default function Materials() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-gray-400 border-b border-gray-100">
+              <tr className="text-left text-xs text-gray-500 border-b border-gray-200">
                 <th className="px-4 py-2 font-medium">รหัส/ชื่อ</th>
                 <th className="px-4 py-2 font-medium text-right">ทุน</th>
                 <th className="px-4 py-2 font-medium text-right">คงเหลือ</th>
@@ -66,20 +66,20 @@ export default function Materials() {
                 <tr key={m.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
                   <td className="px-4 py-3">
                     <p className="text-gray-800 flex items-center gap-1.5">{m.name}{low(m) && <AlertTriangle size={13} className="text-amber-500" />}</p>
-                    <p className="text-xs text-gray-400">{m.code}</p>
+                    <p className="text-xs text-gray-500">{m.code}</p>
                   </td>
                   <td className="px-4 py-3 text-right text-gray-500">฿{m.cost.toLocaleString()}</td>
                   <td className="px-4 py-3 text-right"><span className={low(m) ? 'text-amber-600 font-medium' : 'text-gray-700'}>{m.stockQty}{m.unit ? ` ${m.unit.name}` : ''}</span></td>
-                  <td className="px-4 py-3 text-right text-gray-400">{m.reorderLevel ?? '-'}</td>
+                  <td className="px-4 py-3 text-right text-gray-500">{m.reorderLevel ?? '-'}</td>
                   {manage && (
                     <td className="px-4 py-3 text-right whitespace-nowrap">
-                      <button onClick={() => openEdit(m)} className="p-1.5 text-gray-400 hover:text-brand-600"><Pencil size={13} /></button>
-                      <button onClick={() => remove(m.id)} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={13} /></button>
+                      <button onClick={() => openEdit(m)} className="p-1.5 text-gray-500 hover:text-brand-600"><Pencil size={13} /></button>
+                      <button onClick={() => remove(m.id)} className="p-1.5 text-gray-500 hover:text-red-500"><Trash2 size={13} /></button>
                     </td>
                   )}
                 </tr>
               ))}
-              {filtered.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-gray-300"><Boxes size={28} className="mx-auto mb-2 opacity-40" />ยังไม่มีวัสดุ</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-gray-400"><Boxes size={28} className="mx-auto mb-2 opacity-40" />ยังไม่มีวัสดุ</td></tr>}
             </tbody>
           </table>
         </div>

@@ -12,7 +12,7 @@ const STATUS = {
   ARRIVED: ['มาถึง', 'bg-brand-100 text-brand-700 border-brand-200'],
   IN_PROGRESS: ['กำลังตรวจ', 'bg-purple-100 text-purple-700 border-purple-200'],
   COMPLETED: ['เสร็จ', 'bg-green-100 text-green-700 border-green-200'],
-  CANCELLED: ['ยกเลิก', 'bg-gray-50 text-gray-400 border-gray-100'],
+  CANCELLED: ['ยกเลิก', 'bg-gray-50 text-gray-500 border-gray-200'],
   NO_SHOW: ['ไม่มา', 'bg-red-100 text-red-500 border-red-200'],
 }
 const EMPTY = { patientId: '', doctorId: '', assistantId: '', departmentId: '', serviceId: '', roomId: '', scheduledAt: '', durationMin: 30, note: '', status: 'SCHEDULED' }
@@ -232,14 +232,14 @@ export default function Appointments() {
         <button onClick={() => setDate(new Date())} className="text-xs px-2 py-1 bg-gray-100 rounded text-gray-500 hover:bg-gray-200">วันนี้</button>
 
         <div className="ml-auto flex items-center gap-2 text-xs text-gray-500">
-          <Clock size={14} className="text-gray-400" />
+          <Clock size={14} className="text-gray-500" />
           <span>ช่วงเวลา</span>
           <input type="time" step="1800" value={minToLabel(startMin)} onChange={e => setRange('start', e.target.value)}
             className="border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-300" />
-          <span className="text-gray-400">–</span>
+          <span className="text-gray-500">–</span>
           <input type="time" step="1800" value={minToLabel(endMin)} onChange={e => setRange('end', e.target.value)}
             className="border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-300" />
-          <span className="text-gray-300 ml-1 hidden md:inline">· {appts.filter(a => a.status !== 'CANCELLED').length} นัด · {rooms.length} ห้อง</span>
+          <span className="text-gray-400 ml-1 hidden md:inline">· {appts.filter(a => a.status !== 'CANCELLED').length} นัด · {rooms.length} ห้อง</span>
         </div>
       </div>
 
@@ -251,7 +251,7 @@ export default function Appointments() {
 
       {outRange.length > 0 && (
         <Card className="p-3 mb-3">
-          <p className="text-xs text-gray-400 mb-2">นอกช่วง {minToLabel(startMin)}–{minToLabel(endMin)} (ลากลงตารางเพื่อจัดเวลา)</p>
+          <p className="text-xs text-gray-500 mb-2">นอกช่วง {minToLabel(startMin)}–{minToLabel(endMin)} (ลากลงตารางเพื่อจัดเวลา)</p>
           <div className="grid sm:grid-cols-3 gap-2">{outRange.map(a => renderAppt(a))}</div>
         </Card>
       )}
@@ -260,10 +260,10 @@ export default function Appointments() {
       <Card className="flex-1 min-h-0 overflow-auto">
         <div className="grid min-w-max h-full" style={gridStyle}>
           {/* header */}
-          <div style={{ gridColumn: 1, gridRow: 1 }} className="sticky top-0 left-0 z-30 bg-white border-b-2 border-r border-gray-200 px-2 py-1.5 text-xs text-gray-400">เวลา</div>
+          <div style={{ gridColumn: 1, gridRow: 1 }} className="sticky top-0 left-0 z-30 bg-white border-b-2 border-r border-gray-200 px-2 py-1.5 text-xs text-gray-500">เวลา</div>
           {columns.map((c, ci) => (
             <div key={colKey(c.id)} style={{ gridColumn: ci + 2, gridRow: 1 }} className="sticky top-0 z-20 bg-white border-b-2 border-r border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 flex items-center gap-1.5">
-              <DoorOpen size={13} className={c.id == null ? 'text-gray-300' : 'text-brand-500'} />
+              <DoorOpen size={13} className={c.id == null ? 'text-gray-400' : 'text-brand-500'} />
               <span className="truncate">{c.name}</span>
             </div>
           ))}
@@ -271,11 +271,11 @@ export default function Appointments() {
           {/* time labels + empty background cells (drop targets) */}
           {slots.map((slot, idx) => {
             const onHour = slot.m === 0
-            const rowBorder = onHour ? 'border-gray-200' : 'border-gray-100'
+            const rowBorder = onHour ? 'border-gray-200' : 'border-gray-200'
             return (
               <Fragment key={idx}>
                 <div style={{ gridColumn: 1, gridRow: idx + 2 }}
-                  className={`sticky left-0 z-20 bg-white border-b border-r border-gray-100 px-2 py-1 text-xs flex items-center ${onHour ? 'text-gray-500 font-medium' : 'text-gray-300'}`}>
+                  className={`sticky left-0 z-20 bg-white border-b border-r border-gray-200 px-2 py-1 text-xs flex items-center ${onHour ? 'text-gray-500 font-medium' : 'text-gray-400'}`}>
                   {slot.label}
                 </div>
                 {columns.map((c, ci) => {
@@ -346,7 +346,7 @@ export default function Appointments() {
       <Modal open={roomOpen} onClose={() => setRoomOpen(false)} title="เพิ่มห้อง">
         <form onSubmit={addRoom} className="space-y-3">
           <Field label="ชื่อห้อง *"><input required autoFocus className={inputCls} placeholder="เช่น ห้องตรวจ 3" value={roomName} onChange={e => setRoomName(e.target.value)} /></Field>
-          <p className="text-xs text-gray-400">จัดการห้องทั้งหมด (แก้ไข/ลบ) ได้ที่ <span className="font-medium">ข้อมูลหลัก → ห้อง</span></p>
+          <p className="text-xs text-gray-500">จัดการห้องทั้งหมด (แก้ไข/ลบ) ได้ที่ <span className="font-medium">ข้อมูลหลัก → ห้อง</span></p>
           <div className="flex gap-2 pt-1">
             <Btn type="button" variant="ghost" className="flex-1" onClick={() => setRoomOpen(false)}>ยกเลิก</Btn>
             <Btn type="submit" className="flex-1">เพิ่มห้อง</Btn>
@@ -357,7 +357,7 @@ export default function Appointments() {
       <Modal open={open} onClose={closeModal} title={editId ? 'แก้ไขนัดหมาย' : 'สร้างนัดหมาย'}>
         <form onSubmit={save} className="space-y-3">
           <Field label="คนไข้ *">
-            <select required disabled={!!editId} className={inputCls + (editId ? ' bg-gray-50 text-gray-400' : '')} value={form.patientId} onChange={set('patientId')}>
+            <select required disabled={!!editId} className={inputCls + (editId ? ' bg-gray-50 text-gray-500' : '')} value={form.patientId} onChange={set('patientId')}>
               <option value="">เลือกคนไข้...</option>
               {patients.map(p => <option key={p.id} value={p.id}>{p.name} ({p.hn})</option>)}
             </select>

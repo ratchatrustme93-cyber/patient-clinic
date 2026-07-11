@@ -49,7 +49,7 @@ export default function Bills() {
                 <div className="w-10 h-10 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center"><Receipt size={18} /></div>
                 <div>
                   <p className="text-sm font-medium text-gray-800">{b.billNo} · {b.patient.name}</p>
-                  <p className="text-xs text-gray-400">{b.patient.hn} · {format(new Date(b.date), 'd MMM yyyy', { locale: th })} · {b._count.items} รายการ</p>
+                  <p className="text-xs text-gray-500">{b.patient.hn} · {format(new Date(b.date), 'd MMM yyyy', { locale: th })} · {b._count.items} รายการ</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -108,12 +108,12 @@ function CreateBill({ patients, services, onClose, onSaved }) {
               <input className={inputCls + ' col-span-5'} placeholder="รายการ" value={l.description} onChange={e => setLine(i, 'description', e.target.value)} />
               <input type="number" className={inputCls + ' col-span-2'} placeholder="จำนวน" value={l.qty} onChange={e => setLine(i, 'qty', e.target.value)} />
               <input type="number" className={inputCls + ' col-span-2'} placeholder="ราคา" value={l.unitPrice} onChange={e => setLine(i, 'unitPrice', e.target.value)} />
-              <button type="button" onClick={() => setLines(ls => ls.filter((_, idx) => idx !== i))} className="col-span-1 text-gray-300 hover:text-red-500 text-lg">×</button>
+              <button type="button" onClick={() => setLines(ls => ls.filter((_, idx) => idx !== i))} className="col-span-1 text-gray-400 hover:text-red-500 text-lg">×</button>
             </div>
           ))}
         </div>
         <button type="button" onClick={() => setLines(ls => [...ls, { kind: 'ITEM', description: '', qty: 1, unitPrice: 0 }])} className="text-xs text-brand-600 hover:underline">+ เพิ่มรายการ</button>
-        <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-100">
+        <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-200">
           <span className="text-sm text-gray-500">ส่วนลด</span>
           <input type="number" className={inputCls + ' w-28'} value={discount} onChange={e => setDiscount(e.target.value)} />
         </div>
@@ -135,7 +135,7 @@ function BillDetail({ id, methods, onClose, onChanged }) {
   const [pm, setPm] = useState('')
   const [paying, setPaying] = useState(false)
   useEffect(() => { api.get(`/bills/${id}`).then(r => setBill(r.data)) }, [id])
-  if (!bill) return <Modal open onClose={onClose} title="บิล"><p className="text-sm text-gray-400">กำลังโหลด...</p></Modal>
+  if (!bill) return <Modal open onClose={onClose} title="บิล"><p className="text-sm text-gray-500">กำลังโหลด...</p></Modal>
 
   async function pay() {
     setPaying(true)
@@ -146,15 +146,15 @@ function BillDetail({ id, methods, onClose, onChanged }) {
   return (
     <Modal open onClose={onClose} title={`บิล ${bill.billNo}`} wide>
       <div id="report-print" className="text-sm">
-        <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-3">
+        <div className="flex items-center justify-between border-b border-gray-200 pb-3 mb-3">
           <div>
             <p className="text-lg font-semibold text-brand-700">Patient Clinic</p>
-            <p className="text-xs text-gray-400">{bill.patient.name} ({bill.patient.hn}) · {format(new Date(bill.date), 'd MMM yyyy', { locale: th })}</p>
+            <p className="text-xs text-gray-500">{bill.patient.name} ({bill.patient.hn}) · {format(new Date(bill.date), 'd MMM yyyy', { locale: th })}</p>
           </div>
           <Badge tone={tone}>{label}</Badge>
         </div>
         <table className="w-full mb-3">
-          <thead><tr className="text-xs text-gray-400 text-left border-b border-gray-100">
+          <thead><tr className="text-xs text-gray-500 text-left border-b border-gray-200">
             <th className="py-1.5">รายการ</th><th className="py-1.5 text-right">จำนวน</th><th className="py-1.5 text-right">ราคา</th><th className="py-1.5 text-right">รวม</th>
           </tr></thead>
           <tbody>
@@ -176,7 +176,7 @@ function BillDetail({ id, methods, onClose, onChanged }) {
         </div>
       </div>
 
-      <div className="flex gap-2 pt-4 border-t border-gray-100 mt-3">
+      <div className="flex gap-2 pt-4 border-t border-gray-200 mt-3">
         <Btn variant="ghost" onClick={() => window.print()}><Printer size={13} className="inline mr-1" /> พิมพ์</Btn>
         {bill.status === 'UNPAID' && (
           <div className="flex gap-2 flex-1">

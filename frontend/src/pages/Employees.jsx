@@ -69,7 +69,7 @@ export default function Employees() {
         {list.map(u => {
           const r = ROLES[u.role]; const Icon = r.icon
           return (
-            <div key={u.id} className={`bg-white rounded-xl p-4 border border-gray-100 flex items-start gap-3 ${u.active ? '' : 'opacity-50'}`}>
+            <div key={u.id} className={`bg-white rounded-xl p-4 border border-gray-200 flex items-start gap-3 ${u.active ? '' : 'opacity-50'}`}>
               <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${r.cls}`}>
                 <Icon size={18} />
               </div>
@@ -77,14 +77,14 @@ export default function Employees() {
                 <p className="font-medium text-gray-800 text-sm flex items-center gap-2">
                   {u.name} {!u.active && <Badge tone="gray">ปิด</Badge>}
                 </p>
-                <p className="text-xs text-gray-400">{u.code} · {r.label}{u.department ? ` · ${u.department.name}` : ''}</p>
-                {u.specialty && <p className="text-xs text-gray-400">เชี่ยวชาญ: {u.specialty}{u.licenseNo ? ` · ${u.licenseNo}` : ''}</p>}
-                <p className="text-xs text-gray-400 mt-0.5">{u.email}{u.phone ? ` · ${u.phone}` : ''}</p>
+                <p className="text-xs text-gray-500">{u.code} · {r.label}{u.department ? ` · ${u.department.name}` : ''}</p>
+                {u.specialty && <p className="text-xs text-gray-500">เชี่ยวชาญ: {u.specialty}{u.licenseNo ? ` · ${u.licenseNo}` : ''}</p>}
+                <p className="text-xs text-gray-500 mt-0.5">{u.email}{u.phone ? ` · ${u.phone}` : ''}</p>
               </div>
               {manage && (
                 <div className="flex flex-col gap-1">
-                  <button onClick={() => openEdit(u)} className="p-1.5 text-gray-400 hover:text-brand-600"><Pencil size={13} /></button>
-                  {u.active && u.role !== 'MASTER' && <button onClick={() => deactivate(u.id)} className="p-1.5 text-gray-400 hover:text-red-500"><X size={13} /></button>}
+                  <button onClick={() => openEdit(u)} className="p-1.5 text-gray-500 hover:text-brand-600"><Pencil size={13} /></button>
+                  {u.active && u.role !== 'MASTER' && <button onClick={() => deactivate(u.id)} className="p-1.5 text-gray-500 hover:text-red-500"><X size={13} /></button>}
                 </div>
               )}
             </div>
@@ -121,7 +121,7 @@ export default function Employees() {
             </div>
           )}
           <Field label={`อีเมล (ใช้เข้าระบบ) ${editId ? '' : '*'}`}>
-            <input type="email" required={!editId} disabled={!!editId} className={inputCls + (editId ? ' bg-gray-50 text-gray-400' : '')} value={form.email} onChange={set('email')} />
+            <input type="email" required={!editId} disabled={!!editId} className={inputCls + (editId ? ' bg-gray-50 text-gray-500' : '')} value={form.email} onChange={set('email')} />
           </Field>
           {!editId && <Field label="รหัสผ่าน (เว้นว่าง = clinic123)"><input type="text" className={inputCls} value={form.password} onChange={set('password')} placeholder="clinic123" /></Field>}
           {err && <p className="text-sm text-red-500">{err}</p>}
