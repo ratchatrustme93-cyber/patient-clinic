@@ -1,0 +1,102 @@
+/* ─────────────────────────────────────────────
+   Utilities — ตัวช่วยจัดวางชุดเล็ก ๆ
+   ใช้สำหรับกรณีเฉพาะกิจเท่านั้น อะไรที่ซ้ำ ๆ ให้ทำเป็น component class
+   ───────────────────────────────────────────── */
+
+/* ── แถวแนวนอน ── */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+}
+.row-top { align-items: flex-start; }
+.row-between { justify-content: space-between; }
+.row-end { justify-content: flex-end; }
+.row-center { justify-content: center; }
+.items-end { align-items: flex-end; }
+.wrap { flex-wrap: wrap; }
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+}
+
+.gap-4  { gap: var(--sp-4); }
+.gap-6  { gap: var(--sp-6); }
+.gap-8  { gap: var(--sp-8); }
+.gap-12 { gap: var(--sp-12); }
+.gap-16 { gap: var(--sp-16); }
+
+/* ── ซ้อนแนวตั้ง (แทน space-y) ── */
+.stack > * + *    { margin-top: var(--sp-12); }
+.stack-sm > * + * { margin-top: var(--sp-6); }
+.stack-lg > * + * { margin-top: var(--sp-20); }
+
+/* ── ระยะขอบ ── */
+.mt-4  { margin-top: var(--sp-4); }
+.mt-8  { margin-top: var(--sp-8); }
+.mt-12 { margin-top: var(--sp-12); }
+.mt-16 { margin-top: var(--sp-16); }
+.mb-4  { margin-bottom: var(--sp-4); }
+.mb-6  { margin-bottom: var(--sp-6); }
+.mb-8  { margin-bottom: var(--sp-8); }
+.mb-12 { margin-bottom: var(--sp-12); }
+.mb-16 { margin-bottom: var(--sp-16); }
+.ml-auto { margin-left: auto; }
+
+/* ── ขนาด / การหด-ขยาย ── */
+.grow      { flex: 1; }
+.grow-min  { flex: 1; min-width: 0; }
+.no-shrink { flex-shrink: 0; }
+.full      { width: 100%; }
+
+.truncate {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nowrap { white-space: nowrap; }
+
+/* ── ตัวอักษร ── */
+.muted  { color: var(--text-muted); }
+.soft   { color: var(--text-soft); }
+.strong { font-weight: var(--fw-semibold); color: var(--text); }
+.medium { font-weight: var(--fw-medium); }
+.tiny   { font-size: var(--fs-xs); }
+.small  { font-size: var(--fs-sm); }
+.mono   { font-family: var(--font-mono); }
+.right  { text-align: right; }
+.center { text-align: center; }
+.pre    { white-space: pre-wrap; }
+.italic { font-style: italic; }
+
+.text-danger { color: var(--red-500); }
+.text-warn   { color: var(--amber-600); font-weight: var(--fw-medium); }
+.text-brand  { color: var(--brand-600); }
+.text-ok     { color: var(--green-600); }
+
+/* ── เส้นคั่นด้านบน (ใช้แยกกลุ่มในฟอร์ม/การ์ด) ── */
+.divided-top {
+  padding-top: var(--sp-12);
+  border-top: 1px solid var(--border-soft);
+}
+
+/* ── ซ่อนตามขนาดจอ ── */
+.only-sm-up { display: none; }
+@media (min-width: 640px) {
+  .only-sm-up { display: initial; }
+  .hide-sm-up { display: none; }
+}
+
+/* ── ตัวช่วยกริดคอลัมน์ 12 ช่อง (แถวรายการบิล / master) ── */
+.grid-12 {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--sp-8);
+}
+.span-1 { grid-column: span 1; }
+.span-2 { grid-column: span 2; }
+.span-4 { grid-column: span 4; }
+.span-5 { grid-column: span 5; }

@@ -4,7 +4,7 @@ import { format, differenceInYears } from 'date-fns'
 import { th } from 'date-fns/locale'
 import { ArrowLeft, Pencil, Plus, FileText, Calendar, Receipt, Printer, AlertTriangle, User, Eye, EyeOff, Mic, Copy, Check, Trash2 } from 'lucide-react'
 import api from '../lib/api'
-import { PageHeader, Btn, Modal, Field, inputCls, Empty, Badge, Card, TagInput, StatTile } from '../components/ui'
+import { PageHeader, Btn, Modal, Field, Empty, Badge, Card, StatTile } from '../components/ui'
 import { PatientFields, EMPTY_PATIENT, maskId } from '../components/PatientForm'
 import { useVoiceRecorder } from '../components/VoiceRecorder'
 import { getToken } from '../lib/auth'
@@ -40,68 +40,63 @@ export default function PatientDetail() {
   }, [id])
 
   if (accessErr) return (
-    <div className="p-6 mx-auto max-w-2xl">
-      <button onClick={() => nav(-1)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-600 mb-4"><ArrowLeft size={14} /> กลับ</button>
-      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-6 text-center text-amber-700 text-sm">🔒 {accessErr}</div>
+    <div className="page page--wide">
+      <button onClick={() => nav(-1)} className="back-link"><ArrowLeft size={14} /> กลับ</button>
+      <div className="alert alert--center tone-amber">🔒 {accessErr}</div>
     </div>
   )
-  if (!patient) return <div className="p-6 text-gray-500 text-sm">กำลังโหลด...</div>
+  if (!patient) return <div className="page__loading">กำลังโหลด...</div>
 
   const ageText = patient.birthdate ? `${differenceInYears(new Date(), new Date(patient.birthdate))} ปี` : '—'
   const chronicList = (patient.chronic || '').split(',').map(c => c.trim()).filter(Boolean)
   const outstanding = patient.bills.filter(b => b.status === 'UNPAID').reduce((s, b) => s + b.total, 0)
 
   return (
-    <div className="p-6 mx-auto max-w-[1320px]">
-      <button onClick={() => nav(-1)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-600 mb-4">
-        <ArrowLeft size={14} /> กลับ
-      </button>
+    <div className="page">
+      <button onClick={() => nav(-1)} className="back-link"><ArrowLeft size={14} /> กลับ</button>
 
-      {/* Identity — always visible */}
-      <Card className="p-5 mb-4">
-        <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-full bg-brand-50 overflow-hidden flex items-center justify-center text-brand-600 font-bold text-2xl flex-shrink-0">
-            {patient.photo ? <img src={patient.photo} alt={patient.name} className="w-full h-full object-cover" /> : patient.name[0]}
+      {/* ข้อมูลระบุตัวตน — เห็นตลอด */}
+      <Card pad="lg" className="mb-16">
+        <div className="row row-top gap-16">
+          <div className="avatar avatar--lg">
+            {patient.photo ? <img src={patient.photo} alt={patient.name} /> : patient.name[0]}
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-3">
+          <div className="grow-min">
+            <div className="row row-top row-between gap-12">
               <div>
-                <h2 className="text-xl font-semibold text-gray-800">{patient.title ? `${patient.title} ` : ''}{patient.name}</h2>
-                <p className="text-sm text-gray-500">
-                  <span className="font-mono">{patient.hn}</span>
+                <h2 className="page-header__title">{patient.title ? `${patient.title} ` : ''}{patient.name}</h2>
+                <p className="small muted">
+                  <span className="mono">{patient.hn}</span>
                   {[GENDER[patient.gender], ageText !== '—' ? ageText : null].filter(Boolean).map(t => <span key={t}> · {t}</span>)}
                 </p>
               </div>
-              <Btn variant="ghost" onClick={() => setModal('edit')}><Pencil size={13} className="inline mr-1" /> แก้ไข</Btn>
+              <Btn variant="ghost" onClick={() => setModal('edit')}><Pencil size={13} /> แก้ไข</Btn>
             </div>
           </div>
         </div>
         {patient.allergies && (
-          <div className="mt-4 flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-700">
-            <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
-            <span><span className="font-semibold">แพ้ยา/สาร:</span> {patient.allergies}</span>
+          <div className="alert tone-red mt-16">
+            <AlertTriangle size={16} className="alert__icon" />
+            <span><span className="strong">แพ้ยา/สาร:</span> {patient.allergies}</span>
           </div>
         )}
       </Card>
 
-      {/* Summary — always visible */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      {/* สรุป — เห็นตลอด */}
+      <div className="stat-grid stat-grid--3 mb-16">
         <StatTile icon={FileText} label="ประวัติการรักษา" value={patient.visits.length} tone="brand" />
         <StatTile icon={Calendar} label="นัดหมาย" value={patient.appointments.length} tone="blue" />
         <StatTile icon={Receipt} label="ยอดค้างชำระ" value={`฿${outstanding.toLocaleString()}`} tone="amber" />
       </div>
 
-      {/* Tab bar */}
-      <div className="flex items-center gap-1 mb-4 border-b border-gray-200 overflow-x-auto [scrollbar-width:thin]">
+      {/* แถบแท็บ */}
+      <div className="tabline">
         {TABS.map(({ key, label, icon: Icon }) => {
           const count = key === 'treatment' ? patient.visits.length : key === 'billing' ? patient.bills.length : null
           return (
-            <button key={key} onClick={() => setTab(key)}
-              className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm whitespace-nowrap border-b-2 -mb-px transition ${
-                tab === key ? 'border-brand-600 text-brand-700 font-medium' : 'border-transparent text-gray-500 hover:text-gray-800'
-              }`}>
+            <button key={key} onClick={() => setTab(key)} className={`tabline__item${tab === key ? ' is-active' : ''}`}>
               <Icon size={16} /> {label}
-              {count > 0 && <span className={`text-xs px-1.5 rounded-full ${tab === key ? 'bg-brand-100 text-brand-700' : 'bg-gray-100 text-gray-500'}`}>{count}</span>}
+              {count > 0 && <span className="tabline__count">{count}</span>}
             </button>
           )
         })}
@@ -111,10 +106,10 @@ export default function PatientDetail() {
       <div key={tab} className="tab-enter">
       {/* Tab: ประวัติส่วนตัว */}
       {tab === 'personal' && (
-        <Card className="p-5 space-y-5">
-          <div>
-            <p className="text-sm font-semibold text-gray-700 mb-3">ข้อมูลทั่วไป</p>
-            <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-4">
+        <Card pad="lg">
+          <div className="form-section">
+            <p className="form-section__title">ข้อมูลทั่วไป</p>
+            <dl className="facts">
               <Fact label="เพศ" value={GENDER[patient.gender] || '—'} />
               <Fact label="อายุ" value={ageText} />
               <Fact label="วันเกิด" value={patient.birthdate ? format(new Date(patient.birthdate), 'd MMM yyyy', { locale: th }) : '—'} />
@@ -126,46 +121,46 @@ export default function PatientDetail() {
             </dl>
           </div>
 
-          <div className="pt-4 border-t border-gray-100">
-            <p className="text-sm font-semibold text-gray-700 mb-3">ข้อมูลติดต่อ</p>
-            <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-4">
+          <div className="form-section">
+            <p className="form-section__title">ข้อมูลติดต่อ</p>
+            <dl className="facts">
               <Fact label="เบอร์โทร" value={patient.phone || '—'} />
               <Fact label="อีเมล" value={patient.email || '—'} />
-              <div className="col-span-2 sm:col-span-3"><Fact label="ที่อยู่" value={patient.address || '—'} /></div>
+              <div className="facts__wide"><Fact label="ที่อยู่" value={patient.address || '—'} /></div>
             </dl>
           </div>
 
-          <div className="pt-4 border-t border-gray-100">
-            <p className="text-sm font-semibold text-gray-700 mb-3">ข้อมูลสุขภาพ</p>
-            <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-4">
+          <div className="form-section">
+            <p className="form-section__title">ข้อมูลสุขภาพ</p>
+            <dl className="facts">
               <Fact label="กรุ๊ปเลือด" value={patient.bloodType || '—'} />
               <Fact label="น้ำหนัก" value={patient.weight ? `${patient.weight} กก.` : '—'} />
               <Fact label="ส่วนสูง" value={patient.height ? `${patient.height} ซม.` : '—'} />
               <Fact label="สิทธิการรักษา" value={patient.insurance || '—'} />
             </dl>
-            <div className="mt-4">
-              <p className="text-xs text-gray-500 mb-1.5">โรคประจำตัว</p>
+            <div className="mt-16">
+              <p className="fact__label mb-6">โรคประจำตัว</p>
               {chronicList.length > 0
-                ? <div className="flex flex-wrap gap-1.5">{chronicList.map(c => <Badge key={c} tone="amber">{c}</Badge>)}</div>
-                : <p className="text-sm text-gray-400">—</p>}
+                ? <div className="row wrap gap-6">{chronicList.map(c => <Badge key={c} tone="amber">{c}</Badge>)}</div>
+                : <p className="small soft">—</p>}
             </div>
           </div>
 
-          <div className="pt-4 border-t border-gray-100">
-            <p className="text-sm font-semibold text-gray-700 mb-3">ผู้ติดต่อกรณีฉุกเฉิน</p>
+          <div className="form-section">
+            <p className="form-section__title">ผู้ติดต่อกรณีฉุกเฉิน</p>
             {patient.emergencyName || patient.emergencyPhone ? (
-              <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-4">
+              <dl className="facts">
                 <Fact label="ชื่อ-นามสกุล" value={patient.emergencyName || '—'} />
                 <Fact label="ความสัมพันธ์" value={patient.emergencyRelation || '—'} />
                 <Fact label="เบอร์โทร" value={patient.emergencyPhone || '—'} />
               </dl>
-            ) : <p className="text-sm text-gray-400">—</p>}
+            ) : <p className="small soft">—</p>}
           </div>
 
           {patient.note && (
-            <div className="pt-4 border-t border-gray-100">
-              <p className="text-xs text-gray-500 mb-1.5">หมายเหตุ</p>
-              <p className="text-sm text-gray-800 whitespace-pre-wrap">{patient.note}</p>
+            <div className="form-section">
+              <p className="fact__label mb-6">หมายเหตุ</p>
+              <p className="small pre">{patient.note}</p>
             </div>
           )}
         </Card>
@@ -175,41 +170,36 @@ export default function PatientDetail() {
       {tab === 'treatment' && (
         <>
           <Section title="ใบรายงาน / การรักษา" icon={FileText}
-            action={<Btn onClick={() => setModal('report')}><Plus size={13} className="inline mr-1" /> บันทึกการรักษา</Btn>}>
+            action={<Btn onClick={() => setModal('report')}><Plus size={13} /> บันทึกการรักษา</Btn>}>
             {patient.visits.length === 0 ? <Empty>ยังไม่มีประวัติการรักษา</Empty> : (
-              <div className="space-y-2">
+              <div className="col gap-8">
                 {patient.visits.map(v => (
-                  <div key={v.id} className="border border-gray-200 rounded-xl p-3.5 hover:border-brand-200 transition">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-medium text-gray-800">{v.diagnosis || 'ยังไม่วินิจฉัย'}</p>
-                        <p className="text-xs text-gray-500 mt-1">
+                  <div key={v.id} className="visit">
+                    <div className="row row-top row-between gap-12">
+                      <div className="grow-min">
+                        <p className="visit__title">{v.diagnosis || 'ยังไม่วินิจฉัย'}</p>
+                        <p className="visit__meta">
                           {format(new Date(v.visitDate), 'd MMM yyyy', { locale: th })}{v.doctor ? ` · ${v.doctor.name}` : ''}
                         </p>
-                        {v.chiefComplaint && <p className="text-xs text-gray-500 mt-0.5">อาการ: {v.chiefComplaint}</p>}
+                        {v.chiefComplaint && <p className="visit__meta">อาการ: {v.chiefComplaint}</p>}
                       </div>
-                      <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                        <button onClick={() => setViewReport(v)} className="text-xs text-brand-600 hover:underline">ดูรายงาน</button>
+                      <div className="col gap-6 no-shrink items-end">
+                        <button onClick={() => setViewReport(v)} className="link-btn">ดูรายงาน</button>
                         {v.bill
                           ? <Badge tone="gray">บิล {v.bill.billNo}</Badge>
-                          : <button onClick={() => setModal({ bill: true, visitId: v.id })} className="text-xs text-brand-600 hover:underline">+ ออกบิล</button>}
+                          : <button onClick={() => setModal({ bill: true, visitId: v.id })} className="link-btn">+ ออกบิล</button>}
                       </div>
                     </div>
 
                     {/* บันทึกเสียง (ผูกได้หลายอันต่อการรักษา) */}
-                    <div className="mt-3 pt-3 border-t border-gray-100">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs text-gray-500">🎙️ บันทึกเสียง {v.voiceRecords?.length ? `(${v.voiceRecords.length})` : ''}</span>
-                        <button onClick={() => voice.open({ visitId: v.id, label: v.diagnosis || 'การรักษา', onSaved: fetch })}
-                          className="text-xs text-brand-600 hover:underline inline-flex items-center gap-1">
+                    <div className="visit__voice">
+                      <div className="row row-between mb-6">
+                        <span className="tiny muted">🎙️ บันทึกเสียง {v.voiceRecords?.length ? `(${v.voiceRecords.length})` : ''}</span>
+                        <button onClick={() => voice.open({ visitId: v.id, label: v.diagnosis || 'การรักษา', onSaved: fetch })} className="link-btn">
                           <Mic size={12} /> อัดเสียง
                         </button>
                       </div>
-                      {v.voiceRecords?.length > 0 && (
-                        <div className="space-y-2">
-                          {v.voiceRecords.map(vr => <VoiceItem key={vr.id} rec={vr} onChange={fetch} />)}
-                        </div>
-                      )}
+                      {v.voiceRecords?.length > 0 && v.voiceRecords.map(vr => <VoiceItem key={vr.id} rec={vr} onChange={fetch} />)}
                     </div>
                   </div>
                 ))}
@@ -219,12 +209,12 @@ export default function PatientDetail() {
 
           <Section title="ประวัตินัดหมาย" icon={Calendar}>
             {patient.appointments.length === 0 ? <Empty>ยังไม่มีนัด</Empty> : (
-              <div className="space-y-1.5">
+              <div className="list">
                 {patient.appointments.map(a => (
-                  <div key={a.id} className="flex items-center justify-between text-sm border-b border-gray-100 last:border-0 py-1.5">
-                    <span className="text-gray-800">
+                  <div key={a.id} className="list__row">
+                    <span>
                       {format(new Date(a.scheduledAt), 'd MMM yyyy HH:mm', { locale: th })}{a.endAt ? `–${format(new Date(a.endAt), 'HH:mm')}` : ''}
-                      <span className="text-gray-500">{a.service ? ` · ${a.service.name}` : ''}{a.doctor ? ` · ${a.doctor.name}` : ''}</span>
+                      <span className="muted">{a.service ? ` · ${a.service.name}` : ''}{a.doctor ? ` · ${a.doctor.name}` : ''}</span>
                     </span>
                     <Badge tone={a.status === 'COMPLETED' ? 'green' : a.status === 'CANCELLED' ? 'gray' : 'blue'}>{APPT[a.status]}</Badge>
                   </div>
@@ -238,14 +228,14 @@ export default function PatientDetail() {
       {/* Tab: ค่าใช้จ่าย */}
       {tab === 'billing' && (
         <Section title="บิล / การชำระเงิน" icon={Receipt}
-          action={<Btn variant="ghost" onClick={() => setModal({ bill: true })}><Plus size={13} className="inline mr-1" /> สร้างบิล</Btn>}>
+          action={<Btn variant="ghost" onClick={() => setModal({ bill: true })}><Plus size={13} /> สร้างบิล</Btn>}>
           {patient.bills.length === 0 ? <Empty>ยังไม่มีบิล</Empty> : (
-            <div className="space-y-1.5">
+            <div className="list">
               {patient.bills.map(b => (
-                <div key={b.id} className="flex items-center justify-between text-sm border-b border-gray-100 last:border-0 py-1.5">
-                  <span className="text-gray-800">{b.billNo} · {format(new Date(b.date), 'd MMM yyyy', { locale: th })}</span>
-                  <span className="flex items-center gap-2">
-                    <span className="text-gray-600">฿{b.total.toLocaleString()}</span>
+                <div key={b.id} className="list__row">
+                  <span>{b.billNo} · {format(new Date(b.date), 'd MMM yyyy', { locale: th })}</span>
+                  <span className="row gap-8">
+                    <span className="muted">฿{b.total.toLocaleString()}</span>
                     <Badge tone={b.status === 'PAID' ? 'green' : b.status === 'UNPAID' ? 'amber' : 'gray'}>
                       {b.status === 'PAID' ? 'ชำระแล้ว' : b.status === 'UNPAID' ? 'ค้างชำระ' : b.status}
                     </Badge>
@@ -276,8 +266,8 @@ export default function PatientDetail() {
 function Fact({ label, value }) {
   return (
     <div>
-      <dt className="text-xs text-gray-500">{label}</dt>
-      <dd className="text-sm text-gray-800 mt-0.5">{value}</dd>
+      <dt className="fact__label">{label}</dt>
+      <dd className="fact__value">{value}</dd>
     </div>
   )
 }
@@ -292,29 +282,30 @@ function VoiceItem({ rec, onChange }) {
   const saveEdit = async () => { await api.put(`/voice-records/${rec.id}`, { transcript: text }); setEditing(false); onChange?.() }
   const del = async () => { if (!confirm('ลบบันทึกเสียงนี้?')) return; await api.delete(`/voice-records/${rec.id}`); onChange?.() }
   return (
-    <div className="bg-gray-50 rounded-lg p-2.5 border border-gray-100">
-      <div className="flex items-center gap-2 mb-1.5">
-        {rec.audioFile && <audio controls preload="none" src={`/api/voice-records/${rec.id}/audio?t=${getToken()}`} className="h-8 flex-1 min-w-0" />}
-        <span className="text-[11px] text-gray-400 flex-shrink-0">{dur}</span>
+    <div className="voice-item">
+      <div className="voice-item__player">
+        {rec.audioFile && <audio controls preload="none" src={`/api/voice-records/${rec.id}/audio?t=${getToken()}`} />}
+        <span className="voice-item__dur">{dur}</span>
       </div>
       {editing ? (
-        <div className="space-y-1.5">
-          <textarea value={text} onChange={e => setText(e.target.value)} rows={3}
-            className="w-full text-sm border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-300 resize-none" />
-          <div className="flex gap-3 justify-end">
-            <button onClick={() => { setEditing(false); setText(rec.transcript || '') }} className="text-xs text-gray-500 hover:underline">ยกเลิก</button>
-            <button onClick={saveEdit} className="text-xs text-brand-600 font-medium hover:underline">บันทึก</button>
+        <div className="stack-sm">
+          <textarea value={text} onChange={e => setText(e.target.value)} rows={3} className="input input--flat" />
+          <div className="row row-end gap-12">
+            <button onClick={() => { setEditing(false); setText(rec.transcript || '') }} className="link-btn link-btn--muted">ยกเลิก</button>
+            <button onClick={saveEdit} className="link-btn medium">บันทึก</button>
           </div>
         </div>
       ) : (
         <>
           {rec.transcript
-            ? <p className="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">{rec.transcript}</p>
-            : <p className="text-xs text-gray-400 italic">ไม่มีซับ</p>}
-          <div className="flex items-center gap-3 mt-1.5">
-            <button onClick={copy} className="text-[11px] text-gray-500 hover:text-brand-600 inline-flex items-center gap-1">{copied ? <Check size={11} /> : <Copy size={11} />}{copied ? 'คัดลอกแล้ว' : 'คัดลอก'}</button>
-            <button onClick={() => setEditing(true)} className="text-[11px] text-gray-500 hover:text-brand-600">แก้ไขซับ</button>
-            <button onClick={del} className="text-[11px] text-gray-400 hover:text-red-500 ml-auto inline-flex items-center gap-1"><Trash2 size={11} /> ลบ</button>
+            ? <p className="voice-item__text">{rec.transcript}</p>
+            : <p className="voice-item__empty">ไม่มีซับ</p>}
+          <div className="voice-item__actions">
+            <button onClick={copy} className="link-btn link-btn--muted">
+              {copied ? <Check size={11} /> : <Copy size={11} />}{copied ? 'คัดลอกแล้ว' : 'คัดลอก'}
+            </button>
+            <button onClick={() => setEditing(true)} className="link-btn link-btn--muted">แก้ไขซับ</button>
+            <button onClick={del} className="link-btn link-btn--muted ml-auto"><Trash2 size={11} /> ลบ</button>
           </div>
         </>
       )}
@@ -327,11 +318,11 @@ function NationalIdFact({ value }) {
   const [reveal, setReveal] = useState(false)
   return (
     <div>
-      <dt className="text-xs text-gray-500">เลขบัตรประชาชน</dt>
-      <dd className="text-sm text-gray-800 mt-0.5 flex items-center gap-2">
-        <span className="font-mono tracking-wider">{value ? (reveal ? value : maskId(value)) : '—'}</span>
+      <dt className="fact__label">เลขบัตรประชาชน</dt>
+      <dd className="fact__value row gap-8">
+        <span className="mono">{value ? (reveal ? value : maskId(value)) : '—'}</span>
         {value && (
-          <button type="button" onClick={() => setReveal(r => !r)} className="text-gray-400 hover:text-gray-600">
+          <button type="button" onClick={() => setReveal(r => !r)} className="reveal-btn">
             {reveal ? <EyeOff size={14} /> : <Eye size={14} />}
           </button>
         )}
@@ -342,12 +333,12 @@ function NationalIdFact({ value }) {
 
 function Section({ title, icon: Icon, action, children }) {
   return (
-    <div className="mb-4">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2"><Icon size={14} />{title}</h3>
+    <div className="section">
+      <div className="section__head">
+        <h3 className="section__title"><Icon size={14} />{title}</h3>
         {action}
       </div>
-      <Card className="p-3">{children}</Card>
+      <Card pad="sm">{children}</Card>
     </div>
   )
 }
@@ -386,35 +377,35 @@ function ReportModal({ patientId, doctors, appointments, onClose, onSaved }) {
   }
   return (
     <Modal open onClose={onClose} title="บันทึกการรักษา (ใบรายงานคนไข้)">
-      <form onSubmit={save} className="space-y-3">
+      <form onSubmit={save} className="stack">
         {appointments.length > 0 && (
           <Field label="อ้างอิงนัด (ถ้ามี)">
-            <select className={inputCls} value={form.appointmentId} onChange={set('appointmentId')}>
+            <select className="input" value={form.appointmentId} onChange={set('appointmentId')}>
               <option value="">ไม่อ้างอิง</option>
               {appointments.map(a => <option key={a.id} value={a.id}>{format(new Date(a.scheduledAt), 'd MMM HH:mm')} {a.service ? `· ${a.service.name}` : ''}</option>)}
             </select>
           </Field>
         )}
         <Field label="แพทย์ผู้ตรวจ">
-          <select className={inputCls} value={form.doctorId} onChange={set('doctorId')}>
+          <select className="input" value={form.doctorId} onChange={set('doctorId')}>
             <option value="">ไม่ระบุ</option>
             {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
         </Field>
-        <Field label="อาการสำคัญ (chief complaint)"><input className={inputCls} value={form.chiefComplaint} onChange={set('chiefComplaint')} /></Field>
-        <Field label="การวินิจฉัย (diagnosis)"><input className={inputCls} value={form.diagnosis} onChange={set('diagnosis')} /></Field>
-        <Field label="การรักษา / หัตถการ"><textarea rows={2} className={inputCls} value={form.treatment} onChange={set('treatment')} /></Field>
-        <Field label="หมายเหตุ"><textarea rows={2} className={inputCls} value={form.note} onChange={set('note')} /></Field>
-        <div className="flex gap-2 pt-2">
-          <Btn type="button" variant="ghost" className="flex-1" onClick={onClose}>ยกเลิก</Btn>
-          <Btn type="submit" disabled={saving} className="flex-1">{saving ? 'กำลังบันทึก...' : 'บันทึก'}</Btn>
+        <Field label="อาการสำคัญ (chief complaint)"><input className="input" value={form.chiefComplaint} onChange={set('chiefComplaint')} /></Field>
+        <Field label="การวินิจฉัย (diagnosis)"><input className="input" value={form.diagnosis} onChange={set('diagnosis')} /></Field>
+        <Field label="การรักษา / หัตถการ"><textarea rows={2} className="input" value={form.treatment} onChange={set('treatment')} /></Field>
+        <Field label="หมายเหตุ"><textarea rows={2} className="input" value={form.note} onChange={set('note')} /></Field>
+        <div className="form-actions">
+          <Btn type="button" variant="ghost" className="btn--grow" onClick={onClose}>ยกเลิก</Btn>
+          <Btn type="submit" disabled={saving} className="btn--grow">{saving ? 'กำลังบันทึก...' : 'บันทึก'}</Btn>
         </div>
       </form>
     </Modal>
   )
 }
 
-function BillModal({ patientId, visitId, services, methods, onClose, onSaved }) {
+function BillModal({ patientId, visitId, services, onClose, onSaved }) {
   const [lines, setLines] = useState([{ kind: 'SERVICE', description: '', qty: 1, unitPrice: 0 }])
   const [discount, setDiscount] = useState(0)
   const [saving, setSaving] = useState(false)
@@ -434,39 +425,39 @@ function BillModal({ patientId, visitId, services, methods, onClose, onSaved }) 
   }
   return (
     <Modal open onClose={onClose} title="สร้างบิล" wide>
-      <form onSubmit={save} className="space-y-3">
+      <form onSubmit={save} className="stack">
         <Field label="เพิ่มบริการจากรายการ (quick add)">
-          <select className={inputCls} value="" onChange={e => quickService(e.target.value)}>
+          <select className="input" value="" onChange={e => quickService(e.target.value)}>
             <option value="">เลือกบริการ...</option>
             {services.map(s => <option key={s.id} value={s.id}>{s.name} — ฿{s.price}</option>)}
           </select>
         </Field>
-        <div className="space-y-2">
+        <div className="stack-sm">
           {lines.map((l, i) => (
-            <div key={i} className="grid grid-cols-12 gap-2 items-center">
-              <select className={inputCls + ' col-span-2'} value={l.kind} onChange={e => setLine(i, 'kind', e.target.value)}>
+            <div key={i} className="grid-12">
+              <select className="input span-2" value={l.kind} onChange={e => setLine(i, 'kind', e.target.value)}>
                 <option value="SERVICE">บริการ</option><option value="ITEM">สินค้า</option><option value="MATERIAL">วัสดุ</option><option value="OTHER">อื่นๆ</option>
               </select>
-              <input className={inputCls + ' col-span-5'} placeholder="รายการ" value={l.description} onChange={e => setLine(i, 'description', e.target.value)} />
-              <input type="number" className={inputCls + ' col-span-2'} placeholder="จำนวน" value={l.qty} onChange={e => setLine(i, 'qty', e.target.value)} />
-              <input type="number" className={inputCls + ' col-span-2'} placeholder="ราคา" value={l.unitPrice} onChange={e => setLine(i, 'unitPrice', e.target.value)} />
-              <button type="button" onClick={() => rmLine(i)} className="col-span-1 text-gray-400 hover:text-red-500 text-lg">×</button>
+              <input className="input span-5" placeholder="รายการ" value={l.description} onChange={e => setLine(i, 'description', e.target.value)} />
+              <input type="number" className="input span-2" placeholder="จำนวน" value={l.qty} onChange={e => setLine(i, 'qty', e.target.value)} />
+              <input type="number" className="input span-2" placeholder="ราคา" value={l.unitPrice} onChange={e => setLine(i, 'unitPrice', e.target.value)} />
+              <button type="button" onClick={() => rmLine(i)} className="icon-btn icon-btn--danger icon-btn--quiet span-1">×</button>
             </div>
           ))}
         </div>
-        <button type="button" onClick={addLine} className="text-xs text-brand-600 hover:underline">+ เพิ่มรายการ</button>
+        <button type="button" onClick={addLine} className="link-btn">+ เพิ่มรายการ</button>
 
-        <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-200">
-          <span className="text-sm text-gray-500">ส่วนลด</span>
-          <input type="number" className={inputCls + ' w-28'} value={discount} onChange={e => setDiscount(e.target.value)} />
+        <div className="row row-end gap-12 divided-top">
+          <span className="small muted">ส่วนลด</span>
+          <input type="number" className="input input--narrow" value={discount} onChange={e => setDiscount(e.target.value)} />
         </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-500">รวมย่อย ฿{subtotal.toLocaleString()}</span>
-          <span className="font-semibold text-gray-800">ยอดสุทธิ ฿{total.toLocaleString()}</span>
+        <div className="row row-between small">
+          <span className="muted">รวมย่อย ฿{subtotal.toLocaleString()}</span>
+          <span className="strong">ยอดสุทธิ ฿{total.toLocaleString()}</span>
         </div>
-        <div className="flex gap-2 pt-2">
-          <Btn type="button" variant="ghost" className="flex-1" onClick={onClose}>ยกเลิก</Btn>
-          <Btn type="submit" disabled={saving} className="flex-1">{saving ? 'กำลังบันทึก...' : 'บันทึกบิล'}</Btn>
+        <div className="form-actions">
+          <Btn type="button" variant="ghost" className="btn--grow" onClick={onClose}>ยกเลิก</Btn>
+          <Btn type="submit" disabled={saving} className="btn--grow">{saving ? 'กำลังบันทึก...' : 'บันทึกบิล'}</Btn>
         </div>
       </form>
     </Modal>
@@ -476,10 +467,12 @@ function BillModal({ patientId, visitId, services, methods, onClose, onSaved }) 
 function ViewReportModal({ visit, patient, onClose }) {
   return (
     <Modal open onClose={onClose} title="ใบรายงานคนไข้ (Patient Report)" wide>
-      <div id="report-print" className="space-y-3 text-sm">
-        <div className="border-b border-gray-200 pb-3">
-          <p className="text-lg font-semibold text-brand-700">Patient Clinic</p>
-          <p className="text-xs text-gray-500">ใบรายงานการรักษา · {format(new Date(visit.visitDate), 'd MMMM yyyy', { locale: th })}</p>
+      <div id="report-print" className="stack small">
+        <div className="report__head">
+          <div>
+            <p className="report__brand">Patient Clinic</p>
+            <p className="report__meta">ใบรายงานการรักษา · {format(new Date(visit.visitDate), 'd MMMM yyyy', { locale: th })}</p>
+          </div>
         </div>
         <Row label="คนไข้" value={`${patient.name} (${patient.hn})`} />
         <Row label="แพทย์" value={visit.doctor?.name || '-'} />
@@ -488,9 +481,9 @@ function ViewReportModal({ visit, patient, onClose }) {
         <Row label="การรักษา" value={visit.treatment || '-'} />
         <Row label="หมายเหตุ" value={visit.note || '-'} />
       </div>
-      <div className="flex gap-2 pt-4">
-        <Btn variant="ghost" className="flex-1" onClick={onClose}>ปิด</Btn>
-        <Btn className="flex-1" onClick={() => window.print()}><Printer size={13} className="inline mr-1" /> พิมพ์</Btn>
+      <div className="form-actions mt-16">
+        <Btn variant="ghost" className="btn--grow" onClick={onClose}>ปิด</Btn>
+        <Btn className="btn--grow" onClick={() => window.print()}><Printer size={13} /> พิมพ์</Btn>
       </div>
     </Modal>
   )
@@ -498,9 +491,9 @@ function ViewReportModal({ visit, patient, onClose }) {
 
 function Row({ label, value }) {
   return (
-    <div className="flex gap-3">
-      <span className="text-gray-500 w-28 flex-shrink-0">{label}</span>
-      <span className="text-gray-800">{value}</span>
+    <div className="report-row">
+      <span className="report-row__label">{label}</span>
+      <span className="report-row__value">{value}</span>
     </div>
   )
 }

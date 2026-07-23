@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Plus, ChevronRight } from 'lucide-react'
 import api from '../lib/api'
-import { PageHeader, Btn, Modal, Empty, Badge, Card, inputCls } from '../components/ui'
+import { PageHeader, Btn, Modal, Empty, Badge, Card } from '../components/ui'
 import { PatientFields, EMPTY_PATIENT } from '../components/PatientForm'
 
 const GENDER = { MALE: 'ชาย', FEMALE: 'หญิง', OTHER: 'อื่นๆ' }
@@ -38,53 +38,52 @@ export default function Patients() {
   }
 
   return (
-    <div className="p-6 mx-auto max-w-[1320px]">
+    <div className="page">
       <PageHeader title="คนไข้" subtitle={`${list.length} รายชื่อ`}>
-        <Btn onClick={() => { setForm(EMPTY); setOpen(true) }}><Plus size={14} className="inline mr-1" /> เพิ่มคนไข้</Btn>
+        <Btn onClick={() => { setForm(EMPTY); setOpen(true) }}><Plus size={14} /> เพิ่มคนไข้</Btn>
       </PageHeader>
 
-      <div className="relative mb-4">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-        <input className={inputCls + ' pl-9'} placeholder="ค้นหาชื่อ, HN, เบอร์โทร..." value={search} onChange={e => setSearch(e.target.value)} />
+      <div className="search mb-16">
+        <Search size={16} className="search__icon" />
+        <input className="input" placeholder="ค้นหาชื่อ, HN, เบอร์โทร..." value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm whitespace-nowrap">
+      <Card className="card--clip">
+        <div className="table-wrap">
+          <table className="table table--nowrap">
             <thead>
-              <tr className="text-left text-gray-500 bg-gray-50 border-b border-gray-200">
-                <th className="px-4 py-3 font-medium">HN</th>
-                <th className="px-4 py-3 font-medium">ชื่อ-นามสกุล</th>
-                <th className="px-4 py-3 font-medium">เพศ</th>
-                <th className="px-4 py-3 font-medium text-center">อายุ</th>
-                <th className="px-4 py-3 font-medium">เบอร์โทร</th>
-                <th className="px-4 py-3 font-medium text-center">กรุ๊ปเลือด</th>
-                <th className="px-4 py-3 font-medium">สถานะ</th>
-                <th className="px-4 py-3"></th>
+              <tr>
+                <th>HN</th>
+                <th>ชื่อ-นามสกุล</th>
+                <th>เพศ</th>
+                <th className="center">อายุ</th>
+                <th>เบอร์โทร</th>
+                <th className="center">กรุ๊ปเลือด</th>
+                <th>สถานะ</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {list.map(p => (
-                <tr key={p.id} onClick={() => nav(`/patients/${p.id}`)}
-                  className="border-b border-gray-100 last:border-0 cursor-pointer hover:bg-brand-50/60 transition">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-500">{p.hn}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-8 h-8 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 font-semibold text-xs flex-shrink-0">{p.name[0]}</span>
-                      <span className="font-medium text-gray-800">{p.name}</span>
+                <tr key={p.id} onClick={() => nav(`/patients/${p.id}`)} className="is-clickable">
+                  <td className="mono tiny muted">{p.hn}</td>
+                  <td>
+                    <div className="cell-person">
+                      <span className="avatar avatar--sm">{p.name[0]}</span>
+                      <span className="cell-person__name">{p.name}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{GENDER[p.gender] || '—'}</td>
-                  <td className="px-4 py-3 text-center text-gray-600">{age(p.birthdate) ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-600">{p.phone || '—'}</td>
-                  <td className="px-4 py-3 text-center text-gray-600">{p.bloodType || '—'}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-1">
+                  <td>{GENDER[p.gender] || '—'}</td>
+                  <td className="center">{age(p.birthdate) ?? '—'}</td>
+                  <td>{p.phone || '—'}</td>
+                  <td className="center">{p.bloodType || '—'}</td>
+                  <td>
+                    <div className="row wrap gap-4">
                       {p.allergies && <Badge tone="red">แพ้ยา</Badge>}
                       {p.chronic && <Badge tone="amber">โรคประจำตัว</Badge>}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-right"><ChevronRight size={16} className="text-gray-400 inline" /></td>
+                  <td className="right soft"><ChevronRight size={16} /></td>
                 </tr>
               ))}
             </tbody>

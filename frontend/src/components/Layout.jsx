@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Calendar, Users, Receipt, Stethoscope,
-  Package, Boxes, Database, LogOut, HeartPulse,
+  Package, Boxes, Database, LogOut, HeartPulse, Palette,
 } from 'lucide-react'
 import { getUser, logout, canManage } from '../lib/auth'
+import { getTheme, nextTheme, themeLabel } from '../lib/theme'
 
 const NAV = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'แดชบอร์ด' },
@@ -21,62 +23,51 @@ const ROLE_LABEL = { MASTER: 'Master', ADMIN: 'ผู้ดูแล', DOCTOR: '
 export default function Layout({ children }) {
   const user = getUser()
   const { pathname } = useLocation()
+  const [theme, setTheme] = useState(getTheme)
 
   return (
-    <div className="flex flex-col h-screen bg-[#e8edf2]">
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
-        {/* accent bar */}
-        <div className="h-1" style={{ background: 'linear-gradient(90deg, #14b8a6 0%, #22c55e 42%, #38bdf8 100%)' }} />
+    <div className="app">
+      <header className="topbar">
+        <div className="topbar__accent" />
 
-        <div className="max-w-[1320px] mx-auto px-5">
-          {/* top row */}
-          <div className="flex items-center gap-3 py-3">
-            <NavLink to="/dashboard" className="flex items-center gap-2.5 group" aria-label="Patient Clinic">
-              <div className="w-9 h-9 rounded-lg bg-brand-600 text-white flex items-center justify-center group-hover:bg-brand-700 transition">
-                <HeartPulse size={18} />
-              </div>
-              <div className="leading-none">
-                <p className="font-semibold text-gray-800">Patient Clinic</p>
-                <p className="text-[11px] text-gray-500 mt-1">ระบบจัดการคลินิก</p>
+        <div className="shell">
+          <div className="topbar__row">
+            <NavLink to="/dashboard" className="brand" aria-label="Patient Clinic">
+              <div className="brand__mark"><HeartPulse size={18} /></div>
+              <div className="brand__text">
+                <p className="brand__name">Patient Clinic</p>
+                <p className="brand__sub">ระบบจัดการคลินิก</p>
               </div>
             </NavLink>
 
-            <div className="ml-auto flex items-center gap-3">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm text-gray-700 leading-none">{user?.name}</p>
-                <p className="text-[11px] text-brand-600 mt-1">
+            <div className="userbox">
+              <div className="userbox__meta">
+                <p className="userbox__name">{user?.name}</p>
+                <p className="userbox__role">
                   {ROLE_LABEL[user?.role] || user?.role} · {user?.code}
                 </p>
               </div>
-              <span className="w-9 h-9 rounded-full bg-brand-50 text-brand-700 flex items-center justify-center text-sm font-semibold flex-shrink-0">
-                {user?.name?.[0] || '?'}
-              </span>
+              <span className="avatar">{user?.name?.[0] || '?'}</span>
               <button
-                onClick={logout}
-                title="ออกจากระบบ"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 text-gray-500 text-xs hover:bg-red-50 hover:border-red-200 hover:text-red-500 transition"
+                onClick={() => setTheme(nextTheme())}
+                title={`หน้าตา: ${themeLabel(theme)} — กดเพื่อสลับ`}
+                aria-label="สลับหน้าตาแอป"
+                className="icon-btn"
               >
-                <LogOut size={14} /> <span className="hidden sm:inline">ออกจากระบบ</span>
+                <Palette size={16} />
+              </button>
+              <button onClick={logout} title="ออกจากระบบ" className="pill-btn">
+                <LogOut size={14} /> <span className="only-sm-up">ออกจากระบบ</span>
               </button>
             </div>
           </div>
 
-          {/* nav */}
-          <nav
-            aria-label="เมนูหลัก"
-            className="flex items-center gap-1 py-2 border-t border-gray-200 overflow-x-auto [scrollbar-width:thin]"
-          >
+          <nav aria-label="เมนูหลัก" className="nav">
             {NAV.filter(i => !i.manage || canManage(user)).map(({ to, icon: Icon, label }) => (
               <NavLink
                 key={to}
                 to={to}
-                className={({ isActive }) =>
-                  `inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm whitespace-nowrap border transition ${
-                    isActive
-                      ? 'bg-brand-50 text-brand-700 border-brand-200 font-medium'
-                      : 'text-gray-500 border-transparent hover:bg-gray-50 hover:text-gray-800'
-                  }`
-                }
+                className={({ isActive }) => `nav__link${isActive ? ' is-active' : ''}`}
               >
                 <Icon size={17} /> {label}
               </NavLink>
@@ -85,8 +76,8 @@ export default function Layout({ children }) {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto">
-        <div key={pathname} className="page-enter h-full">{children}</div>
+      <main className="app__main">
+        <div key={pathname} className="page-enter app__page">{children}</div>
       </main>
     </div>
   )

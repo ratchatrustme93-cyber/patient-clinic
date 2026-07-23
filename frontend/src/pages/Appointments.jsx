@@ -4,16 +4,17 @@ import { th } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Plus, Trash2, GripVertical, DoorOpen, AlertTriangle, Clock } from 'lucide-react'
 import api from '../lib/api'
 import { canManage } from '../lib/auth'
-import { PageHeader, Btn, Modal, Field, inputCls, Card } from '../components/ui'
+import { PageHeader, Btn, Modal, Field, Card } from '../components/ui'
 
+// [ข้อความสถานะ, tone class]
 const STATUS = {
-  SCHEDULED: ['นัดไว้', 'bg-gray-100 text-gray-600 border-gray-200'],
-  CONFIRMED: ['ยืนยัน', 'bg-blue-100 text-blue-700 border-blue-200'],
-  ARRIVED: ['มาถึง', 'bg-brand-100 text-brand-700 border-brand-200'],
-  IN_PROGRESS: ['กำลังตรวจ', 'bg-purple-100 text-purple-700 border-purple-200'],
-  COMPLETED: ['เสร็จ', 'bg-green-100 text-green-700 border-green-200'],
-  CANCELLED: ['ยกเลิก', 'bg-gray-50 text-gray-500 border-gray-200'],
-  NO_SHOW: ['ไม่มา', 'bg-red-100 text-red-500 border-red-200'],
+  SCHEDULED:   ['นัดไว้', 'tone-gray'],
+  CONFIRMED:   ['ยืนยัน', 'tone-blue'],
+  ARRIVED:     ['มาถึง', 'tone-brand'],
+  IN_PROGRESS: ['กำลังตรวจ', 'tone-purple'],
+  COMPLETED:   ['เสร็จ', 'tone-green'],
+  CANCELLED:   ['ยกเลิก', 'tone-quiet'],
+  NO_SHOW:     ['ไม่มา', 'tone-red'],
 }
 const EMPTY = { patientId: '', doctorId: '', assistantId: '', departmentId: '', serviceId: '', roomId: '', scheduledAt: '', durationMin: 30, note: '', status: 'SCHEDULED' }
 const DURATIONS = [15, 30, 45, 60, 90, 120]
@@ -206,12 +207,12 @@ export default function Appointments() {
       onPointerDown={e => onPointerDown(e, a)}
       style={{ touchAction: 'none' }}
       title="กดค้างแล้วลากเพื่อย้าย · แตะเพื่อแก้ไข"
-      className={`select-none text-[11px] rounded-md border px-1.5 py-0.5 flex items-start gap-1 ${a.status === 'CANCELLED' ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'} ${STATUS[a.status][1]} ${dragAppt?.id === a.id ? 'opacity-30' : 'hover:shadow-sm'}`}
+      className={`appt ${STATUS[a.status][1]}${a.status === 'CANCELLED' ? ' is-locked' : ''}${dragAppt?.id === a.id ? ' is-dragging' : ''}`}
     >
-      <GripVertical size={11} className="mt-0.5 opacity-40 flex-shrink-0" />
-      <div className="min-w-0 leading-tight">
-        <p className="font-medium truncate">{format(new Date(a.scheduledAt), 'HH:mm')}{a.endAt ? `–${format(new Date(a.endAt), 'HH:mm')}` : ''} · {a.patient.name}</p>
-        <p className="truncate opacity-70">{[a.service?.name, a.doctor?.name].filter(Boolean).join(' · ') || STATUS[a.status][0]}</p>
+      <GripVertical size={11} className="appt__grip" />
+      <div className="grow-min">
+        <p className="appt__title truncate">{format(new Date(a.scheduledAt), 'HH:mm')}{a.endAt ? `–${format(new Date(a.endAt), 'HH:mm')}` : ''} · {a.patient.name}</p>
+        <p className="appt__detail truncate">{[a.service?.name, a.doctor?.name].filter(Boolean).join(' · ') || STATUS[a.status][0]}</p>
       </div>
     </div>
   )
@@ -224,85 +225,78 @@ export default function Appointments() {
   }
 
   return (
-    <div className="p-6 mx-auto max-w-full h-full flex flex-col">
+    <div className="page page--full">
       <PageHeader title="ตารางนัด" subtitle="กดค้างที่การ์ดแล้วลากไปวางช่อง ห้อง × เวลา · แตะการ์ดเพื่อแก้ไข">
-        <div className="flex gap-2">
-          {manage && <Btn variant="ghost" onClick={() => setRoomOpen(true)}><DoorOpen size={14} className="inline mr-1" /> เพิ่มห้อง</Btn>}
-          <Btn onClick={openCreate}><Plus size={14} className="inline mr-1" /> สร้างนัด</Btn>
+        <div className="row gap-8">
+          {manage && <Btn variant="ghost" onClick={() => setRoomOpen(true)}><DoorOpen size={14} /> เพิ่มห้อง</Btn>}
+          <Btn onClick={openCreate}><Plus size={14} /> สร้างนัด</Btn>
         </div>
       </PageHeader>
 
-      <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <button onClick={() => setDate(d => subDays(d, 1))} className="p-1.5 hover:bg-gray-100 rounded-lg"><ChevronLeft size={18} /></button>
-        <span className="font-medium text-gray-800">{format(date, 'EEEE d MMMM yyyy', { locale: th })}</span>
-        <button onClick={() => setDate(d => addDays(d, 1))} className="p-1.5 hover:bg-gray-100 rounded-lg"><ChevronRight size={18} /></button>
-        <button onClick={() => setDate(new Date())} className="text-xs px-2 py-1 bg-gray-100 rounded text-gray-500 hover:bg-gray-200">วันนี้</button>
+      <div className="sched__toolbar">
+        <button onClick={() => setDate(d => subDays(d, 1))} className="sched__step"><ChevronLeft size={18} /></button>
+        <span className="sched__date">{format(date, 'EEEE d MMMM yyyy', { locale: th })}</span>
+        <button onClick={() => setDate(d => addDays(d, 1))} className="sched__step"><ChevronRight size={18} /></button>
+        <button onClick={() => setDate(new Date())} className="sched__today">วันนี้</button>
 
-        <div className="ml-auto flex items-center gap-2 text-xs text-gray-500">
-          <Clock size={14} className="text-gray-500" />
+        <div className="sched__range">
+          <Clock size={14} />
           <span>ช่วงเวลา</span>
-          <input type="time" step="1800" value={minToLabel(startMin)} onChange={e => setRange('start', e.target.value)}
-            className="border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-300" />
-          <span className="text-gray-500">–</span>
-          <input type="time" step="1800" value={minToLabel(endMin)} onChange={e => setRange('end', e.target.value)}
-            className="border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-300" />
-          <span className="text-gray-400 ml-1 hidden md:inline">· {appts.filter(a => a.status !== 'CANCELLED').length} นัด · {rooms.length} ห้อง</span>
+          <input type="time" step="1800" value={minToLabel(startMin)} onChange={e => setRange('start', e.target.value)} className="time-input" />
+          <span>–</span>
+          <input type="time" step="1800" value={minToLabel(endMin)} onChange={e => setRange('end', e.target.value)} className="time-input" />
+          <span className="sched__count">· {appts.filter(a => a.status !== 'CANCELLED').length} นัด · {rooms.length} ห้อง</span>
         </div>
       </div>
 
       {rooms.length === 0 && (
-        <div className="mb-3 text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-4 py-2">
-          ยังไม่มีห้อง — กด <span className="font-medium">เพิ่มห้อง</span> ด้านบน หรือที่เมนู <span className="font-medium">ข้อมูลหลัก → ห้อง</span>
+        <div className="alert alert--sm tone-amber mb-12">
+          ยังไม่มีห้อง — กด <span className="medium">เพิ่มห้อง</span> ด้านบน หรือที่เมนู <span className="medium">ข้อมูลหลัก → ห้อง</span>
         </div>
       )}
 
       {outRange.length > 0 && (
-        <Card className="p-3 mb-3">
-          <p className="text-xs text-gray-500 mb-2">นอกช่วง {minToLabel(startMin)}–{minToLabel(endMin)} (ลากลงตารางเพื่อจัดเวลา)</p>
-          <div className="grid sm:grid-cols-3 gap-2">{outRange.map(a => renderAppt(a))}</div>
+        <Card pad="sm" className="mb-12">
+          <p className="tiny muted mb-8">นอกช่วง {minToLabel(startMin)}–{minToLabel(endMin)} (ลากลงตารางเพื่อจัดเวลา)</p>
+          <div className="sched__outside">{outRange.map(a => renderAppt(a))}</div>
         </Card>
       )}
 
-      {/* Room × time grid — fits one screen */}
-      <Card className="flex-1 min-h-0 overflow-auto">
-        <div className="grid min-w-max h-full" style={gridStyle}>
-          {/* header */}
-          <div style={{ gridColumn: 1, gridRow: 1 }} className="sticky top-0 left-0 z-30 bg-white border-b-2 border-r border-gray-200 px-2 py-1.5 text-xs text-gray-500">เวลา</div>
+      {/* ตาราง ห้อง × เวลา — พอดีหนึ่งหน้าจอ */}
+      <Card className="card--fill">
+        <div className="sched__grid" style={gridStyle}>
+          {/* หัวตาราง */}
+          <div style={{ gridColumn: 1, gridRow: 1 }} className="sched__corner">เวลา</div>
           {columns.map((c, ci) => (
-            <div key={colKey(c.id)} style={{ gridColumn: ci + 2, gridRow: 1 }} className="sticky top-0 z-20 bg-white border-b-2 border-r border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 flex items-center gap-1.5">
-              <DoorOpen size={13} className={c.id == null ? 'text-gray-400' : 'text-brand-500'} />
+            <div key={colKey(c.id)} style={{ gridColumn: ci + 2, gridRow: 1 }}
+              className={`sched__col-head${c.id == null ? ' sched__col-head--none' : ''}`}>
+              <DoorOpen size={13} />
               <span className="truncate">{c.name}</span>
             </div>
           ))}
 
-          {/* time labels + empty background cells (drop targets) */}
-          {slots.map((slot, idx) => {
-            const onHour = slot.m === 0
-            const rowBorder = onHour ? 'border-gray-200' : 'border-gray-200'
-            return (
-              <Fragment key={idx}>
-                <div style={{ gridColumn: 1, gridRow: idx + 2 }}
-                  className={`sticky left-0 z-20 bg-white border-b border-r border-gray-200 px-2 py-1 text-xs flex items-center ${onHour ? 'text-gray-500 font-medium' : 'text-gray-400'}`}>
-                  {slot.label}
-                </div>
-                {columns.map((c, ci) => {
-                  const ck = colKey(c.id)
-                  const conflict = ck !== 'none' && (startCount[`${ck}-${idx}`] || 0) >= 2
-                  const isHover = hoverCell && hoverCell.room === ck && hoverCell.idx === idx
-                  return (
-                    <div key={ck} data-cell data-room={ck} data-idx={idx}
-                      style={{ gridColumn: ci + 2, gridRow: idx + 2 }}
-                      className={`border-b border-r ${rowBorder} border-r-gray-100 transition-colors
-                        ${isHover ? 'bg-brand-100 ring-2 ring-brand-400 ring-inset'
-                          : conflict ? 'bg-red-50/70 ring-1 ring-red-200 ring-inset'
-                          : dragAppt ? 'bg-brand-50/40' : ''}`} />
-                  )
-                })}
-              </Fragment>
-            )
-          })}
+          {/* ป้ายเวลา + ช่องว่างสำหรับวางการ์ด */}
+          {slots.map((slot, idx) => (
+            <Fragment key={idx}>
+              <div style={{ gridColumn: 1, gridRow: idx + 2 }}
+                className={`sched__time${slot.m === 0 ? ' is-hour' : ''}`}>
+                {slot.label}
+              </div>
+              {columns.map((c, ci) => {
+                const ck = colKey(c.id)
+                const conflict = ck !== 'none' && (startCount[`${ck}-${idx}`] || 0) >= 2
+                const isHover = hoverCell && hoverCell.room === ck && hoverCell.idx === idx
+                const state = isHover ? ' is-hover' : conflict ? ' is-conflict' : dragAppt ? ' is-dropzone' : ''
+                return (
+                  <div key={ck} data-cell data-room={ck} data-idx={idx}
+                    style={{ gridColumn: ci + 2, gridRow: idx + 2 }}
+                    className={`sched__cell${state}`} />
+                )
+              })}
+            </Fragment>
+          ))}
 
-          {/* appointment blocks — span from start time to end time */}
+          {/* การ์ดนัด — กินพื้นที่ตั้งแต่เวลาเริ่มถึงเวลาจบ */}
           {inRange.map(a => {
             const s = new Date(a.scheduledAt)
             const startIdx = idxOf(s)
@@ -319,18 +313,18 @@ export default function Appointments() {
                 onPointerDown={e => onPointerDown(e, a)}
                 style={{ gridColumn: ci + 2, gridRow: `${startIdx + 2} / span ${span}`, touchAction: 'none', pointerEvents: dragAppt ? 'none' : 'auto', zIndex: 10 }}
                 title={`${timeLabel} · ${a.patient.name} · ${detail}`}
-                className={`relative mx-[2px] my-px rounded-md border px-1.5 py-0.5 text-[11px] leading-tight overflow-hidden select-none flex flex-col ${span >= 2 ? 'justify-start' : 'justify-center'} ${a.status === 'CANCELLED' ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'} ${st[1]} ${dragAppt?.id === a.id ? 'opacity-30' : 'hover:shadow-md'}`}
+                className={`appt appt--block ${st[1]}${span >= 2 ? ' is-tall' : ''}${a.status === 'CANCELLED' ? ' is-locked' : ''}${dragAppt?.id === a.id ? ' is-dragging' : ''}`}
               >
                 {span >= 2 ? (
                   <>
-                    <p className="font-medium truncate">{timeLabel} · {a.patient.name}</p>
-                    <p className="truncate opacity-70">{detail}</p>
-                    {end && <span className="absolute bottom-0.5 right-1.5 text-[10px] font-medium opacity-70 pointer-events-none">ถึง {format(end, 'HH:mm')}</span>}
+                    <p className="appt__title truncate">{timeLabel} · {a.patient.name}</p>
+                    <p className="appt__detail truncate">{detail}</p>
+                    {end && <span className="appt__end">ถึง {format(end, 'HH:mm')}</span>}
                   </>
                 ) : (
-                  <div className="flex items-center gap-1 min-w-0">
-                    <span className="font-medium truncate">{format(s, 'HH:mm')} · {a.patient.name}</span>
-                    {end && <span className="ml-auto flex-shrink-0 font-medium opacity-70">ถึง {format(end, 'HH:mm')}</span>}
+                  <div className="appt__oneline">
+                    <span className="appt__title truncate">{format(s, 'HH:mm')} · {a.patient.name}</span>
+                    {end && <span className="appt__title no-shrink ml-auto">ถึง {format(end, 'HH:mm')}</span>}
                   </div>
                 )}
               </div>
@@ -339,109 +333,109 @@ export default function Appointments() {
 
           {/* เส้นเวลาปัจจุบัน (สีแดง) */}
           {showNow && (
-            <div style={{ gridColumn: '1 / -1', gridRow: nowRow + 2, position: 'relative', zIndex: 25, pointerEvents: 'none' }}>
-              <div className="absolute inset-x-0 flex items-center" style={{ top: `${nowFrac * 100}%`, transform: 'translateY(-50%)' }}>
-                <span className="ml-1 text-[10px] font-semibold text-white bg-red-500 rounded px-1 whitespace-nowrap shadow-sm">{format(now, 'HH:mm')}</span>
-                <div className="flex-1 border-t-2 border-red-500" />
+            <div className="now-line" style={{ gridRow: nowRow + 2 }}>
+              <div className="now-line__inner" style={{ top: `${nowFrac * 100}%` }}>
+                <span className="now-line__time">{format(now, 'HH:mm')}</span>
+                <div className="now-line__rule" />
               </div>
             </div>
           )}
         </div>
       </Card>
 
-      {/* drag ghost */}
+      {/* เงาที่ลากตามเมาส์ */}
       {dragAppt && (
-        <div ref={ghostRef} className="fixed top-0 left-0 z-50 pointer-events-none"
+        <div ref={ghostRef} className="drag-ghost"
           style={{ transform: `translate(${posRef.current.x + 10}px, ${posRef.current.y + 10}px)` }}>
-          <div className={`text-xs rounded-md border px-2 py-1.5 shadow-lg ${STATUS[dragAppt.status][1]}`}>
-            <p className="font-medium">{format(new Date(dragAppt.scheduledAt), 'HH:mm')} · {dragAppt.patient.name}</p>
+          <div className={`drag-ghost__card ${STATUS[dragAppt.status][1]}`}>
+            {format(new Date(dragAppt.scheduledAt), 'HH:mm')} · {dragAppt.patient.name}
           </div>
         </div>
       )}
 
-      {/* Quick add room */}
+      {/* เพิ่มห้องแบบเร็ว */}
       <Modal open={roomOpen} onClose={() => setRoomOpen(false)} title="เพิ่มห้อง">
-        <form onSubmit={addRoom} className="space-y-3">
-          <Field label="ชื่อห้อง *"><input required autoFocus className={inputCls} placeholder="เช่น ห้องตรวจ 3" value={roomName} onChange={e => setRoomName(e.target.value)} /></Field>
-          <p className="text-xs text-gray-500">จัดการห้องทั้งหมด (แก้ไข/ลบ) ได้ที่ <span className="font-medium">ข้อมูลหลัก → ห้อง</span></p>
-          <div className="flex gap-2 pt-1">
-            <Btn type="button" variant="ghost" className="flex-1" onClick={() => setRoomOpen(false)}>ยกเลิก</Btn>
-            <Btn type="submit" className="flex-1">เพิ่มห้อง</Btn>
+        <form onSubmit={addRoom} className="stack">
+          <Field label="ชื่อห้อง *"><input required autoFocus className="input" placeholder="เช่น ห้องตรวจ 3" value={roomName} onChange={e => setRoomName(e.target.value)} /></Field>
+          <p className="tiny muted">จัดการห้องทั้งหมด (แก้ไข/ลบ) ได้ที่ <span className="medium">ข้อมูลหลัก → ห้อง</span></p>
+          <div className="form-actions">
+            <Btn type="button" variant="ghost" className="btn--grow" onClick={() => setRoomOpen(false)}>ยกเลิก</Btn>
+            <Btn type="submit" className="btn--grow">เพิ่มห้อง</Btn>
           </div>
         </form>
       </Modal>
 
       <Modal open={open} onClose={closeModal} title={editId ? 'แก้ไขนัดหมาย' : 'สร้างนัดหมาย'}>
-        <form onSubmit={save} className="space-y-3">
+        <form onSubmit={save} className="stack">
           <Field label="คนไข้ *">
-            <select required disabled={!!editId} className={inputCls + (editId ? ' bg-gray-50 text-gray-500' : '')} value={form.patientId} onChange={set('patientId')}>
+            <select required disabled={!!editId} className="input" value={form.patientId} onChange={set('patientId')}>
               <option value="">เลือกคนไข้...</option>
               {patients.map(p => <option key={p.id} value={p.id}>{p.name} ({p.hn})</option>)}
             </select>
           </Field>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="form-grid">
             <Field label="ห้อง">
-              <select className={inputCls} value={form.roomId} onChange={set('roomId')}>
+              <select className="input" value={form.roomId} onChange={set('roomId')}>
                 <option value="">ยังไม่จัดห้อง</option>
                 {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </Field>
             <Field label="บริการ">
-              <select className={inputCls} value={form.serviceId} onChange={set('serviceId')}>
+              <select className="input" value={form.serviceId} onChange={set('serviceId')}>
                 <option value="">ไม่ระบุ</option>
                 {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </Field>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="form-grid">
             <Field label="แพทย์">
-              <select className={inputCls} value={form.doctorId} onChange={set('doctorId')}>
+              <select className="input" value={form.doctorId} onChange={set('doctorId')}>
                 <option value="">ไม่ระบุ</option>
                 {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
             </Field>
             <Field label="ผู้ช่วยแพทย์">
-              <select className={inputCls} value={form.assistantId} onChange={set('assistantId')}>
+              <select className="input" value={form.assistantId} onChange={set('assistantId')}>
                 <option value="">ไม่ระบุ</option>
                 {assistants.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
             </Field>
           </div>
           <Field label="วันเวลาเริ่ม *">
-            <input type="datetime-local" required className={inputCls} value={form.scheduledAt} onChange={set('scheduledAt')} />
+            <input type="datetime-local" required className="input" value={form.scheduledAt} onChange={set('scheduledAt')} />
           </Field>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="form-grid">
             <Field label="ระยะเวลา">
-              <select className={inputCls} value={form.durationMin} onChange={set('durationMin')}>
+              <select className="input" value={form.durationMin} onChange={set('durationMin')}>
                 {DURATIONS.map(m => <option key={m} value={m}>{m} นาที</option>)}
               </select>
             </Field>
             <Field label="แผนก">
-              <select className={inputCls} value={form.departmentId} onChange={set('departmentId')}>
+              <select className="input" value={form.departmentId} onChange={set('departmentId')}>
                 <option value="">ไม่ระบุ</option>
                 {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
             </Field>
           </div>
-          {endHint && <p className="text-xs text-brand-600">ช่วงเวลา {endHint}</p>}
+          {endHint && <p className="tiny text-brand">ช่วงเวลา {endHint}</p>}
           {formConflict && (
-            <div className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 flex items-start gap-1.5">
-              <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />
+            <div className="alert alert--sm tone-red">
+              <AlertTriangle size={14} className="alert__icon" />
               <span>ห้องนี้มีนัดของ <b>{formConflict.patient.name}</b> เวลา {format(new Date(formConflict.scheduledAt), 'HH:mm')} อยู่แล้ว — จองซ้อนได้ แต่จะถามยืนยันก่อนบันทึก</span>
             </div>
           )}
           {editId && (
             <Field label="สถานะ">
-              <select className={inputCls} value={form.status} onChange={set('status')}>
+              <select className="input" value={form.status} onChange={set('status')}>
                 {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v[0]}</option>)}
               </select>
             </Field>
           )}
-          <Field label="หมายเหตุ"><textarea rows={2} className={inputCls} value={form.note} onChange={set('note')} /></Field>
-          <div className="flex gap-2 pt-2">
-            {editId && <Btn type="button" variant="danger" onClick={() => cancelById(editId)}><Trash2 size={13} className="inline mr-1" /> ยกเลิกนัด</Btn>}
-            <Btn type="button" variant="ghost" className="flex-1" onClick={closeModal}>ปิด</Btn>
-            <Btn type="submit" disabled={saving} className="flex-1">{saving ? 'กำลังบันทึก...' : editId ? 'บันทึกการแก้ไข' : 'บันทึกนัด'}</Btn>
+          <Field label="หมายเหตุ"><textarea rows={2} className="input" value={form.note} onChange={set('note')} /></Field>
+          <div className="form-actions">
+            {editId && <Btn type="button" variant="danger" onClick={() => cancelById(editId)}><Trash2 size={13} /> ยกเลิกนัด</Btn>}
+            <Btn type="button" variant="ghost" className="btn--grow" onClick={closeModal}>ปิด</Btn>
+            <Btn type="submit" disabled={saving} className="btn--grow">{saving ? 'กำลังบันทึก...' : editId ? 'บันทึกการแก้ไข' : 'บันทึกนัด'}</Btn>
           </div>
         </form>
       </Modal>

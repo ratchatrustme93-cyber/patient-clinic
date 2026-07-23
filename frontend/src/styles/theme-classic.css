@@ -1,0 +1,70 @@
+/* ═══════════════════════════════════════════════
+   Theme: คลินิกเดิม (classic)
+   เปิดด้วย  <html data-theme="classic">
+
+   หน้าตาชุดแรกของระบบ — teal เข้ม พื้นเทาอมฟ้า มุมโค้งน้อยกว่า
+   เก็บไว้ให้สลับกลับมาเทียบได้ ถ้าชอบแบบเดิมมากกว่า
+   ═══════════════════════════════════════════════ */
+
+:root[data-theme='classic'] {
+  /* teal คลินิก */
+  --brand-50:  #eff9f9;
+  --brand-100: #d6efef;
+  --brand-200: #aee0e0;
+  --brand-300: #78cccc;
+  --brand-400: #43b1b1;
+  --brand-500: #2b9797;
+  --brand-600: #237a7b;
+  --brand-700: #206263;
+  --brand-800: #1e4f51;
+  --brand-900: #1c4244;
+
+  /* เทากลาง ไม่อมฟ้า */
+  --gray-50:  #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+
+  --red-50:  #fef2f2;  --red-100: #fee2e2;  --red-200: #fecaca;
+  --red-500: #ef4444;  --red-600: #dc2626;  --red-700: #b91c1c;
+
+  --amber-50:  #fffbeb;  --amber-100: #fef3c7;  --amber-200: #fde68a;
+  --amber-500: #f59e0b;  --amber-600: #d97706;  --amber-700: #b45309;
+
+  --green-50:  #f0fdf4;  --green-100: #dcfce7;  --green-200: #bbf7d0;
+  --green-500: #22c55e;  --green-600: #16a34a;  --green-700: #15803d;
+
+  --blue-50:  #eff6ff;  --blue-100: #dbeafe;  --blue-200: #bfdbfe;
+  --blue-500: #3b82f6;  --blue-600: #2563eb;  --blue-700: #1d4ed8;
+
+  --purple-50:  #faf5ff;  --purple-100: #f3e8ff;  --purple-200: #e9d5ff;
+  --purple-500: #a855f7;  --purple-600: #9333ea;  --purple-700: #7e22ce;
+
+  --bg: #e8edf2;
+
+  /* มุมโค้งน้อยกว่า */
+  --r-sm:   6px;
+  --r-md:   8px;
+  --r-lg:  12px;
+  --r-xl:  16px;
+
+  /* เงาเทาดำแบบเดิม */
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+  --shadow-xl: 0 20px 40px -12px rgb(0 0 0 / 0.25);
+
+  --ring: 0 0 0 2px var(--brand-300);
+
+  --accent-bar: linear-gradient(90deg, #14b8a6 0%, #22c55e 42%, #38bdf8 100%);
+  --scrim: rgb(17 24 39 / 0.5);
+  --tint-drop: rgb(43 151 151 / 0.06);
+  --tint-conflict: rgb(239 68 68 / 0.06);
+  --numeric: normal;
+}

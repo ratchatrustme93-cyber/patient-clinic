@@ -1,0 +1,162 @@
+/* ─────────────────────────────────────────────
+   Recorder — widget อัดเสียงลอยมุมจอ + รายการเสียงในประวัติการรักษา
+   ───────────────────────────────────────────── */
+
+.recorder {
+  position: fixed;
+  right: var(--sp-16);
+  bottom: var(--sp-16);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  width: min(92vw, 380px);
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-xl);
+}
+
+/* แบบย่อ — แถบแคปซูลเล็ก ยังอัดต่อได้ */
+.recorder--mini {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--sp-8);
+  width: auto;
+  max-width: 320px;
+  padding: var(--sp-8) var(--sp-8) var(--sp-8) var(--sp-12);
+  border-radius: var(--r-pill);
+}
+
+.recorder__header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+  padding: var(--sp-12) var(--sp-16);
+  border-bottom: 1px solid var(--border);
+}
+.recorder__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: var(--r-md);
+  background: var(--brand-50);
+  color: var(--brand-600);
+}
+.recorder__icon.is-live { background: var(--red-50); color: var(--red-500); }
+.recorder__title {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--text);
+}
+.recorder__subtitle { font-size: var(--fs-xs); color: var(--text-muted); }
+
+.recorder__status {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+  padding: var(--sp-8) var(--sp-16);
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--border-soft);
+}
+.recorder__timer {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: var(--text-body);
+}
+.recorder__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  padding: var(--sp-16);
+}
+.recorder__actions {
+  display: flex;
+  gap: var(--sp-8);
+  padding: var(--sp-12) var(--sp-16);
+  border-top: 1px solid var(--border);
+}
+.recorder__notice {
+  padding: var(--sp-8) var(--sp-16);
+  font-size: var(--fs-xs);
+  background: var(--tone-soft);
+  color: var(--tone-fg);
+  border-bottom: 1px solid var(--tone-line);
+}
+.recorder__interim {
+  min-height: 1.25rem;
+  font-size: var(--fs-sm);
+  line-height: 1.375;
+  color: var(--brand-600);
+}
+.recorder__audio { width: 100%; height: 36px; margin-top: var(--sp-4); }
+.recorder__listening {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-left: auto;
+  font-size: var(--fs-2xs);
+  color: var(--text-soft);
+}
+.recorder__listening.is-live { color: var(--green-600); }
+
+/* จุดสถานะ */
+.dot {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: var(--r-pill);
+  background: var(--text-soft);
+}
+.dot--sm { width: 6px; height: 6px; }
+.dot.is-live {
+  background: var(--red-500);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+.dot--green.is-live { background: var(--green-500); }
+
+/* ── รายการเสียงที่บันทึกไว้แล้ว ── */
+.voice-item {
+  padding: var(--sp-10);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-md);
+  background: var(--surface-alt);
+}
+.voice-item + .voice-item { margin-top: var(--sp-8); }
+.voice-item__player {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+  margin-bottom: var(--sp-6);
+}
+.voice-item__player audio {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+}
+.voice-item__dur {
+  flex-shrink: 0;
+  font-size: var(--fs-2xs);
+  color: var(--text-soft);
+}
+.voice-item__text {
+  font-size: var(--fs-xs);
+  color: var(--text-body);
+  line-height: 1.625;
+  white-space: pre-wrap;
+}
+.voice-item__empty {
+  font-size: var(--fs-xs);
+  color: var(--text-soft);
+  font-style: italic;
+}
+.voice-item__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  margin-top: var(--sp-6);
+}
+.voice-item__actions .link-btn { font-size: var(--fs-2xs); }

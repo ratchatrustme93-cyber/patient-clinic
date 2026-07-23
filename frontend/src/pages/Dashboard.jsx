@@ -25,15 +25,15 @@ export default function Dashboard() {
     api.get('/overview').then(r => setData(r.data))
   }, [])
 
-  if (!data) return <div className="p-6 text-gray-500 text-sm">กำลังโหลด...</div>
+  if (!data) return <div className="page__loading">กำลังโหลด...</div>
   const c = data.counts
   const scoped = data.scoped // หมอ = เห็นเฉพาะเคสตัวเอง
 
   return (
-    <div className="p-6 mx-auto max-w-[1320px]">
+    <div className="page">
       <PageHeader title={`สวัสดี, ${user?.name || ''}`} subtitle={scoped ? 'แสดงเฉพาะเคสของคุณ' : format(new Date(), 'EEEE d MMMM yyyy', { locale: th })} />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+      <div className="stat-grid stat-grid--4 mb-16">
         <StatTile icon={Calendar} label={scoped ? 'นัดวันนี้ (ของฉัน)' : 'นัดวันนี้'} value={c.appointmentsToday} tone="brand" />
         <StatTile icon={Users} label={scoped ? 'คนไข้ของฉัน' : 'คนไข้ทั้งหมด'} value={c.patients} tone="blue" />
         <StatTile icon={ClipboardList} label={scoped ? 'การรักษาของฉัน' : 'การรักษา (visit)'} value={c.visits} tone="purple" />
@@ -45,28 +45,28 @@ export default function Dashboard() {
       </div>
 
       {!scoped && data.lowMaterials.length > 0 && (
-        <div className="mb-6 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 flex items-start gap-2">
-          <AlertTriangle size={16} className="text-amber-500 mt-0.5 flex-shrink-0" />
+        <div className="alert tone-amber mb-16">
+          <AlertTriangle size={16} className="alert__icon" />
           <div>
-            <p className="text-sm text-amber-700 font-medium">วัสดุใกล้หมด {data.lowMaterials.length} รายการ</p>
-            <p className="text-xs text-amber-600">{data.lowMaterials.map(m => `${m.name} (${m.stockQty})`).join(' · ')}</p>
+            <p className="alert__title">วัสดุใกล้หมด {data.lowMaterials.length} รายการ</p>
+            <p className="alert__detail">{data.lowMaterials.map(m => `${m.name} (${m.stockQty})`).join(' · ')}</p>
           </div>
         </div>
       )}
 
-      <div className={`grid gap-4 ${scoped ? '' : 'md:grid-cols-2'}`}>
+      <div className={`dash-grid ${scoped ? '' : 'dash-grid--2'}`}>
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-2"><Calendar size={14} />{scoped ? 'นัดหมายวันนี้ (ของฉัน)' : 'นัดหมายวันนี้'}</h3>
-          <Card className="p-3">
+          <h3 className="section__title mb-8"><Calendar size={14} />{scoped ? 'นัดหมายวันนี้ (ของฉัน)' : 'นัดหมายวันนี้'}</h3>
+          <Card pad="sm">
             {data.todayAppointments.length === 0 ? <Empty>ไม่มีนัดวันนี้</Empty> : (
-              <div className="space-y-1.5">
+              <div className="list">
                 {data.todayAppointments.map(a => {
                   const [label, tone] = APPT_STATUS[a.status] || ['-', 'gray']
                   return (
-                    <div key={a.id} className="flex items-center justify-between text-sm border-b border-gray-50 last:border-0 py-1.5">
-                      <span className="text-gray-800">
+                    <div key={a.id} className="list__row">
+                      <span>
                         {format(new Date(a.scheduledAt), 'HH:mm')}{a.endAt ? `–${format(new Date(a.endAt), 'HH:mm')}` : ''} · {a.patient.name}
-                        <span className="text-gray-500">{a.service ? ` · ${a.service.name}` : ''}</span>
+                        <span className="muted">{a.service ? ` · ${a.service.name}` : ''}</span>
                       </span>
                       <Badge tone={tone}>{label}</Badge>
                     </div>
@@ -78,15 +78,15 @@ export default function Dashboard() {
         </div>
 
         {!scoped && <div>
-          <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-2"><Receipt size={14} />บิลล่าสุด</h3>
-          <Card className="p-3">
+          <h3 className="section__title mb-8"><Receipt size={14} />บิลล่าสุด</h3>
+          <Card pad="sm">
             {data.recentBills.length === 0 ? <Empty>ยังไม่มีบิล</Empty> : (
-              <div className="space-y-1.5">
+              <div className="list">
                 {data.recentBills.map(b => (
-                  <Link key={b.id} to="/bills" className="flex items-center justify-between text-sm border-b border-gray-50 last:border-0 py-1.5 hover:text-brand-700">
-                    <span className="text-gray-800">{b.billNo} · {b.patient.name}</span>
-                    <span className="flex items-center gap-2">
-                      <span className="text-gray-600">฿{b.total.toLocaleString()}</span>
+                  <Link key={b.id} to="/bills" className="list__row">
+                    <span>{b.billNo} · {b.patient.name}</span>
+                    <span className="row gap-8">
+                      <span className="muted">฿{b.total.toLocaleString()}</span>
                       <Badge tone={b.status === 'PAID' ? 'green' : b.status === 'UNPAID' ? 'amber' : 'gray'}>
                         {b.status === 'PAID' ? 'ชำระแล้ว' : b.status === 'UNPAID' ? 'ค้างชำระ' : b.status}
                       </Badge>

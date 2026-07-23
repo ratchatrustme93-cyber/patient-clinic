@@ -156,56 +156,57 @@ function RecorderWidget({ session, minimized, setMinimized, close }) {
     }
   }
 
+  const recording = status === 'recording'
+
   // ── ย่อ (minimized) — แถบเล็กมุมจอ ยังอัดต่อได้ ──
   if (minimized) {
     return (
-      <div className="fixed bottom-4 right-4 z-[60] bg-white rounded-full shadow-2xl ring-1 ring-black/10 flex items-center gap-2 pl-3 pr-2 py-2 max-w-[320px]">
-        <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${status === 'recording' ? 'bg-red-500 animate-pulse' : 'bg-gray-400'}`} />
-        <span className="text-xs font-mono text-gray-700 flex-shrink-0">{fmt(seconds)}</span>
-        <span className="text-xs text-gray-500 truncate min-w-0">{interim || transcript || (status === 'recording' ? 'กำลังฟัง…' : 'หยุดแล้ว')}</span>
-        {status === 'recording' && (
-          <button onClick={stopRecording} title="หยุด" className="flex-shrink-0 w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600"><Square size={12} /></button>
+      <div className="recorder recorder--mini">
+        <span className={`dot${recording ? ' is-live' : ''}`} />
+        <span className="recorder__timer tiny no-shrink">{fmt(seconds)}</span>
+        <span className="tiny muted truncate">{interim || transcript || (recording ? 'กำลังฟัง…' : 'หยุดแล้ว')}</span>
+        {recording && (
+          <button onClick={stopRecording} title="หยุด" className="round-btn round-btn--stop"><Square size={12} /></button>
         )}
-        <button onClick={() => setMinimized(false)} title="ขยาย" className="flex-shrink-0 w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center hover:bg-gray-200"><ChevronUp size={14} /></button>
+        <button onClick={() => setMinimized(false)} title="ขยาย" className="round-btn"><ChevronUp size={14} /></button>
       </div>
     )
   }
 
   // ── ขยายเต็ม ──
   return (
-    <div className="fixed bottom-4 right-4 z-[60] w-[min(92vw,380px)] bg-white rounded-2xl shadow-2xl ring-1 ring-black/10 flex flex-col overflow-hidden">
-      {/* header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200">
-        <span className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${status === 'recording' ? 'bg-red-50 text-red-500' : 'bg-brand-50 text-brand-600'}`}><Mic size={16} /></span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-gray-800 truncate">บันทึกเสียง</p>
-          <p className="text-xs text-gray-500 truncate">{session.label}</p>
+    <div className="recorder">
+      <div className="recorder__header">
+        <span className={`recorder__icon${recording ? ' is-live' : ''}`}><Mic size={16} /></span>
+        <div className="grow-min">
+          <p className="recorder__title truncate">บันทึกเสียง</p>
+          <p className="recorder__subtitle truncate">{session.label}</p>
         </div>
-        <button onClick={() => setMinimized(true)} title="ย่อ" className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg p-1"><Minus size={16} /></button>
-        <button onClick={() => { if (status === 'recording' && !confirm('กำลังอัดอยู่ — ปิดแล้วเสียงจะหาย?')) return; close() }} title="ปิด/ทิ้ง" className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg p-1"><X size={16} /></button>
+        <button onClick={() => setMinimized(true)} title="ย่อ" className="modal__close"><Minus size={16} /></button>
+        <button onClick={() => { if (recording && !confirm('กำลังอัดอยู่ — ปิดแล้วเสียงจะหาย?')) return; close() }} title="ปิด/ทิ้ง" className="modal__close"><X size={16} /></button>
       </div>
 
-      {/* timer / status */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 border-b border-gray-100">
-        <span className={`w-2.5 h-2.5 rounded-full ${status === 'recording' ? 'bg-red-500 animate-pulse' : 'bg-gray-400'}`} />
-        <span className="text-sm font-mono text-gray-700">{fmt(seconds)}</span>
-        <span className="text-xs text-gray-500">{status === 'recording' ? 'กำลังอัด…' : 'หยุดแล้ว'}</span>
-        {status === 'recording' && srSupported && (
-          <span className={`ml-auto text-[11px] inline-flex items-center gap-1 ${listening ? 'text-green-600' : 'text-gray-400'}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${listening ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`} />
+      {/* ตัวจับเวลา / สถานะ */}
+      <div className="recorder__status">
+        <span className={`dot${recording ? ' is-live' : ''}`} />
+        <span className="recorder__timer">{fmt(seconds)}</span>
+        <span className="tiny muted">{recording ? 'กำลังอัด…' : 'หยุดแล้ว'}</span>
+        {recording && srSupported && (
+          <span className={`recorder__listening${listening ? ' is-live' : ''}`}>
+            <span className={`dot dot--sm dot--green${listening ? ' is-live' : ''}`} />
             {listening ? 'กำลังฟัง' : 'รอเสียง…'}
           </span>
         )}
       </div>
 
-      {err && <div className="px-4 py-2 text-xs text-red-600 bg-red-50">{err}</div>}
-      {srMsg && <div className="px-4 py-2 text-xs text-amber-700 bg-amber-50 border-b border-amber-100">⚠️ {srMsg}</div>}
+      {err && <div className="recorder__notice tone-red">{err}</div>}
+      {srMsg && <div className="recorder__notice tone-amber">⚠️ {srMsg}</div>}
 
-      {/* transcript (CC) — แก้ไขได้ */}
-      <div className="p-4 space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500">ซับ / ข้อความ (แก้ไขได้)</span>
-          <button onClick={copy} className="text-xs text-brand-600 hover:underline inline-flex items-center gap-1">
+      {/* ซับ (CC) — แก้ไขได้ */}
+      <div className="recorder__body">
+        <div className="row row-between">
+          <span className="tiny muted">ซับ / ข้อความ (แก้ไขได้)</span>
+          <button onClick={copy} className="link-btn">
             {copied ? <><Check size={12} /> คัดลอกแล้ว</> : <><Copy size={12} /> คัดลอก</>}
           </button>
         </div>
@@ -214,28 +215,26 @@ function RecorderWidget({ session, minimized, setMinimized, close }) {
           onChange={e => setTranscript(e.target.value)}
           rows={4}
           placeholder={srSupported ? 'พูดได้เลย ซับจะขึ้นที่นี่…' : 'พิมพ์บันทึกข้อความที่นี่…'}
-          className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-300 resize-none"
+          className="input input--flat"
         />
-        {status === 'recording' && (
-          <p className="text-sm leading-snug min-h-[1.25rem]">
-            {interim
-              ? <span className="text-brand-600">{interim}</span>
-              : <span className="text-gray-400 italic">{listening ? 'พูดได้เลย…' : ''}</span>}
+        {recording && (
+          <p className="recorder__interim">
+            {interim || <span className="soft italic">{listening ? 'พูดได้เลย…' : ''}</span>}
           </p>
         )}
-        {audioUrl && <audio controls src={audioUrl} className="w-full h-9 mt-1" />}
+        {audioUrl && <audio controls src={audioUrl} className="recorder__audio" />}
       </div>
 
-      {/* actions */}
-      <div className="flex gap-2 px-4 py-3 border-t border-gray-200">
-        {status === 'recording' ? (
-          <button onClick={stopRecording} className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-red-500 text-white text-sm hover:bg-red-600">
+      {/* ปุ่มสั่งงาน */}
+      <div className="recorder__actions">
+        {recording ? (
+          <button onClick={stopRecording} className="btn btn--critical btn--grow">
             <Square size={14} /> หยุดอัด
           </button>
         ) : (
           <>
-            <button onClick={close} className="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 text-sm hover:bg-gray-50">ทิ้ง</button>
-            <button onClick={save} disabled={saving || !audioB64} className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-brand-600 text-white text-sm hover:bg-brand-700 disabled:opacity-50">
+            <button onClick={close} className="btn btn--ghost">ทิ้ง</button>
+            <button onClick={save} disabled={saving || !audioB64} className="btn btn--primary btn--grow">
               <Save size={14} /> {saving ? 'กำลังบันทึก…' : 'บันทึกเข้าแผนการรักษา'}
             </button>
           </>

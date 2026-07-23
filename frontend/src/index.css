@@ -1,47 +1,10 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-html, body, #root {
-  height: 100%;
-}
-
-/* page transition on route change */
-@keyframes pageIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: none; }
-}
-.page-enter { animation: pageIn .3s cubic-bezier(.22, .61, .36, 1) both; }
-
-/* every enabled button feels clickable */
-button:not(:disabled) { cursor: pointer; }
-
-/* modal entrance */
-@keyframes modalIn {
-  from { opacity: 0; transform: translateY(10px) scale(.98); }
-  to   { opacity: 1; transform: none; }
-}
-@keyframes backdropIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-.modal-backdrop { animation: backdropIn .15s ease-out both; }
-.modal-panel { animation: modalIn .22s cubic-bezier(.22, .61, .36, 1) both; }
-
-/* tab switch */
-@keyframes tabIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: none; }
-}
-.tab-enter { animation: tabIn .25s cubic-bezier(.22, .61, .36, 1) both; }
-
-@media (prefers-reduced-motion: reduce) {
-  .page-enter, .modal-backdrop, .modal-panel, .tab-enter { animation: none; }
-}
-body {
-  margin: 0;
-  font-family: 'Inter', 'Sarabun', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  background: #e8edf2;
-  color: #111827;
-}
+/* Patient Clinic — design system
+   ลำดับสำคัญ: token → base → layout → components → หน้าเฉพาะ → utilities → theme (ท้ายสุด) */
+@import './styles/tokens.css';
+@import './styles/base.css';
+@import './styles/layout.css';
+@import './styles/components.css';
+@import './styles/schedule.css';
+@import './styles/recorder.css';
+@import './styles/utilities.css';
+@import './styles/theme-classic.css';

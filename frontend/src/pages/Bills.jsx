@@ -3,7 +3,7 @@ import { format } from 'date-fns'
 import { th } from 'date-fns/locale'
 import { Plus, Receipt, Printer, Wallet } from 'lucide-react'
 import api from '../lib/api'
-import { PageHeader, Btn, Modal, Field, inputCls, Empty, Badge, Card } from '../components/ui'
+import { PageHeader, Btn, Modal, Field, Empty, Badge, Card } from '../components/ui'
 
 const STATUS = { DRAFT: ['ร่าง', 'gray'], UNPAID: ['ค้างชำระ', 'amber'], PAID: ['ชำระแล้ว', 'green'], CANCELLED: ['ยกเลิก', 'gray'] }
 const TABS = [['ALL', 'ทั้งหมด'], ['UNPAID', 'ค้างชำระ'], ['PAID', 'ชำระแล้ว']]
@@ -26,34 +26,33 @@ export default function Bills() {
   }, [])
 
   return (
-    <div className="p-6 mx-auto max-w-[1320px]">
+    <div className="page">
       <PageHeader title="บิล / การชำระเงิน">
-        <Btn onClick={() => setCreating(true)}><Plus size={14} className="inline mr-1" /> สร้างบิล</Btn>
+        <Btn onClick={() => setCreating(true)}><Plus size={14} /> สร้างบิล</Btn>
       </PageHeader>
 
-      <div className="flex gap-1 mb-4">
+      <div className="tabs">
         {TABS.map(([k, label]) => (
-          <button key={k} onClick={() => setTab(k)}
-            className={`px-3 py-1.5 rounded-lg text-xs transition ${tab === k ? 'bg-brand-600 text-white' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+          <button key={k} onClick={() => setTab(k)} className={`tab${tab === k ? ' is-active' : ''}`}>
             {label}
           </button>
         ))}
       </div>
 
-      <div className="space-y-2">
+      <div className="col gap-8">
         {bills.map(b => {
           const [label, tone] = STATUS[b.status]
           return (
-            <Card key={b.id} className="p-4 flex items-center justify-between cursor-pointer hover:border-brand-200" >
-              <div onClick={() => setDetailId(b.id)} className="flex items-center gap-3 flex-1">
-                <div className="w-10 h-10 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center"><Receipt size={18} /></div>
+            <Card key={b.id} className="bill card--hoverable">
+              <div onClick={() => setDetailId(b.id)} className="bill__main">
+                <div className="bill__icon"><Receipt size={18} /></div>
                 <div>
-                  <p className="text-sm font-medium text-gray-800">{b.billNo} · {b.patient.name}</p>
-                  <p className="text-xs text-gray-500">{b.patient.hn} · {format(new Date(b.date), 'd MMM yyyy', { locale: th })} · {b._count.items} รายการ</p>
+                  <p className="bill__title">{b.billNo} · {b.patient.name}</p>
+                  <p className="bill__meta">{b.patient.hn} · {format(new Date(b.date), 'd MMM yyyy', { locale: th })} · {b._count.items} รายการ</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="font-semibold text-gray-800">฿{b.total.toLocaleString()}</span>
+              <div className="row gap-12">
+                <span className="bill__amount">฿{b.total.toLocaleString()}</span>
                 <Badge tone={tone}>{label}</Badge>
               </div>
             </Card>
@@ -86,44 +85,44 @@ function CreateBill({ patients, services, onClose, onSaved }) {
   }
   return (
     <Modal open onClose={onClose} title="สร้างบิล" wide>
-      <form onSubmit={save} className="space-y-3">
+      <form onSubmit={save} className="stack">
         <Field label="คนไข้ *">
-          <select required className={inputCls} value={patientId} onChange={e => setPatientId(e.target.value)}>
+          <select required className="input" value={patientId} onChange={e => setPatientId(e.target.value)}>
             <option value="">เลือกคนไข้...</option>
             {patients.map(p => <option key={p.id} value={p.id}>{p.name} ({p.hn})</option>)}
           </select>
         </Field>
         <Field label="เพิ่มบริการ (quick add)">
-          <select className={inputCls} value="" onChange={e => quickService(e.target.value)}>
+          <select className="input" value="" onChange={e => quickService(e.target.value)}>
             <option value="">เลือกบริการ...</option>
             {services.map(s => <option key={s.id} value={s.id}>{s.name} — ฿{s.price}</option>)}
           </select>
         </Field>
-        <div className="space-y-2">
+        <div className="stack-sm">
           {lines.map((l, i) => (
-            <div key={i} className="grid grid-cols-12 gap-2">
-              <select className={inputCls + ' col-span-2'} value={l.kind} onChange={e => setLine(i, 'kind', e.target.value)}>
+            <div key={i} className="grid-12">
+              <select className="input span-2" value={l.kind} onChange={e => setLine(i, 'kind', e.target.value)}>
                 <option value="SERVICE">บริการ</option><option value="ITEM">สินค้า</option><option value="MATERIAL">วัสดุ</option><option value="OTHER">อื่นๆ</option>
               </select>
-              <input className={inputCls + ' col-span-5'} placeholder="รายการ" value={l.description} onChange={e => setLine(i, 'description', e.target.value)} />
-              <input type="number" className={inputCls + ' col-span-2'} placeholder="จำนวน" value={l.qty} onChange={e => setLine(i, 'qty', e.target.value)} />
-              <input type="number" className={inputCls + ' col-span-2'} placeholder="ราคา" value={l.unitPrice} onChange={e => setLine(i, 'unitPrice', e.target.value)} />
-              <button type="button" onClick={() => setLines(ls => ls.filter((_, idx) => idx !== i))} className="col-span-1 text-gray-400 hover:text-red-500 text-lg">×</button>
+              <input className="input span-5" placeholder="รายการ" value={l.description} onChange={e => setLine(i, 'description', e.target.value)} />
+              <input type="number" className="input span-2" placeholder="จำนวน" value={l.qty} onChange={e => setLine(i, 'qty', e.target.value)} />
+              <input type="number" className="input span-2" placeholder="ราคา" value={l.unitPrice} onChange={e => setLine(i, 'unitPrice', e.target.value)} />
+              <button type="button" onClick={() => setLines(ls => ls.filter((_, idx) => idx !== i))} className="icon-btn icon-btn--danger icon-btn--quiet span-1">×</button>
             </div>
           ))}
         </div>
-        <button type="button" onClick={() => setLines(ls => [...ls, { kind: 'ITEM', description: '', qty: 1, unitPrice: 0 }])} className="text-xs text-brand-600 hover:underline">+ เพิ่มรายการ</button>
-        <div className="flex items-center justify-end gap-3 pt-2 border-t border-gray-200">
-          <span className="text-sm text-gray-500">ส่วนลด</span>
-          <input type="number" className={inputCls + ' w-28'} value={discount} onChange={e => setDiscount(e.target.value)} />
+        <button type="button" onClick={() => setLines(ls => [...ls, { kind: 'ITEM', description: '', qty: 1, unitPrice: 0 }])} className="link-btn">+ เพิ่มรายการ</button>
+        <div className="row row-end gap-12 divided-top">
+          <span className="small muted">ส่วนลด</span>
+          <input type="number" className="input input--narrow" value={discount} onChange={e => setDiscount(e.target.value)} />
         </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-500">รวมย่อย ฿{subtotal.toLocaleString()}</span>
-          <span className="font-semibold text-gray-800">ยอดสุทธิ ฿{total.toLocaleString()}</span>
+        <div className="row row-between small">
+          <span className="muted">รวมย่อย ฿{subtotal.toLocaleString()}</span>
+          <span className="strong">ยอดสุทธิ ฿{total.toLocaleString()}</span>
         </div>
-        <div className="flex gap-2 pt-2">
-          <Btn type="button" variant="ghost" className="flex-1" onClick={onClose}>ยกเลิก</Btn>
-          <Btn type="submit" disabled={saving || !patientId} className="flex-1">{saving ? 'กำลังบันทึก...' : 'บันทึกบิล'}</Btn>
+        <div className="form-actions">
+          <Btn type="button" variant="ghost" className="btn--grow" onClick={onClose}>ยกเลิก</Btn>
+          <Btn type="submit" disabled={saving || !patientId} className="btn--grow">{saving ? 'กำลังบันทึก...' : 'บันทึกบิล'}</Btn>
         </div>
       </form>
     </Modal>
@@ -135,7 +134,7 @@ function BillDetail({ id, methods, onClose, onChanged }) {
   const [pm, setPm] = useState('')
   const [paying, setPaying] = useState(false)
   useEffect(() => { api.get(`/bills/${id}`).then(r => setBill(r.data)) }, [id])
-  if (!bill) return <Modal open onClose={onClose} title="บิล"><p className="text-sm text-gray-500">กำลังโหลด...</p></Modal>
+  if (!bill) return <Modal open onClose={onClose} title="บิล"><p className="small muted">กำลังโหลด...</p></Modal>
 
   async function pay() {
     setPaying(true)
@@ -145,46 +144,52 @@ function BillDetail({ id, methods, onClose, onChanged }) {
 
   return (
     <Modal open onClose={onClose} title={`บิล ${bill.billNo}`} wide>
-      <div id="report-print" className="text-sm">
-        <div className="flex items-center justify-between border-b border-gray-200 pb-3 mb-3">
+      <div id="report-print" className="small">
+        <div className="report__head">
           <div>
-            <p className="text-lg font-semibold text-brand-700">Patient Clinic</p>
-            <p className="text-xs text-gray-500">{bill.patient.name} ({bill.patient.hn}) · {format(new Date(bill.date), 'd MMM yyyy', { locale: th })}</p>
+            <p className="report__brand">Patient Clinic</p>
+            <p className="report__meta">{bill.patient.name} ({bill.patient.hn}) · {format(new Date(bill.date), 'd MMM yyyy', { locale: th })}</p>
           </div>
           <Badge tone={tone}>{label}</Badge>
         </div>
-        <table className="w-full mb-3">
-          <thead><tr className="text-xs text-gray-500 text-left border-b border-gray-200">
-            <th className="py-1.5">รายการ</th><th className="py-1.5 text-right">จำนวน</th><th className="py-1.5 text-right">ราคา</th><th className="py-1.5 text-right">รวม</th>
-          </tr></thead>
+        <table className="table table--tight mb-12">
+          <thead>
+            <tr>
+              <th>รายการ</th><th className="right">จำนวน</th><th className="right">ราคา</th><th className="right">รวม</th>
+            </tr>
+          </thead>
           <tbody>
             {bill.items.map(it => (
-              <tr key={it.id} className="border-b border-gray-50">
-                <td className="py-1.5 text-gray-800">{it.description}</td>
-                <td className="py-1.5 text-right text-gray-500">{it.qty}</td>
-                <td className="py-1.5 text-right text-gray-500">฿{it.unitPrice.toLocaleString()}</td>
-                <td className="py-1.5 text-right text-gray-700">฿{it.amount.toLocaleString()}</td>
+              <tr key={it.id}>
+                <td>{it.description}</td>
+                <td className="right muted">{it.qty}</td>
+                <td className="right muted">฿{it.unitPrice.toLocaleString()}</td>
+                <td className="right">฿{it.amount.toLocaleString()}</td>
               </tr>
             ))}
           </tbody>
         </table>
-        <div className="flex flex-col items-end gap-0.5 text-sm">
-          <span className="text-gray-500">รวมย่อย ฿{bill.subtotal.toLocaleString()}</span>
-          {bill.discount > 0 && <span className="text-gray-500">ส่วนลด −฿{bill.discount.toLocaleString()}</span>}
-          <span className="text-base font-semibold text-gray-800">ยอดสุทธิ ฿{bill.total.toLocaleString()}</span>
-          {bill.status === 'PAID' && <span className="text-xs text-green-600">ชำระโดย {bill.paymentMethod?.name || '-'} · {bill.paidAt ? format(new Date(bill.paidAt), 'd MMM yyyy HH:mm') : ''}</span>}
+        <div className="report__totals">
+          <span>รวมย่อย ฿{bill.subtotal.toLocaleString()}</span>
+          {bill.discount > 0 && <span>ส่วนลด −฿{bill.discount.toLocaleString()}</span>}
+          <span className="report__grand">ยอดสุทธิ ฿{bill.total.toLocaleString()}</span>
+          {bill.status === 'PAID' && (
+            <span className="tiny text-ok">
+              ชำระโดย {bill.paymentMethod?.name || '-'} · {bill.paidAt ? format(new Date(bill.paidAt), 'd MMM yyyy HH:mm') : ''}
+            </span>
+          )}
         </div>
       </div>
 
-      <div className="flex gap-2 pt-4 border-t border-gray-200 mt-3">
-        <Btn variant="ghost" onClick={() => window.print()}><Printer size={13} className="inline mr-1" /> พิมพ์</Btn>
+      <div className="row gap-8 mt-12 divided-top">
+        <Btn variant="ghost" onClick={() => window.print()}><Printer size={13} /> พิมพ์</Btn>
         {bill.status === 'UNPAID' && (
-          <div className="flex gap-2 flex-1">
-            <select className={inputCls} value={pm} onChange={e => setPm(e.target.value)}>
+          <div className="row gap-8 grow">
+            <select className="input" value={pm} onChange={e => setPm(e.target.value)}>
               <option value="">วิธีชำระ...</option>
               {methods.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
             </select>
-            <Btn onClick={pay} disabled={paying}><Wallet size={13} className="inline mr-1" /> {paying ? '...' : 'ชำระเงิน'}</Btn>
+            <Btn onClick={pay} disabled={paying}><Wallet size={13} /> {paying ? '...' : 'ชำระเงิน'}</Btn>
           </div>
         )}
       </div>

@@ -1,0 +1,210 @@
+/* ─────────────────────────────────────────────
+   Layout — โครงหน้าหลัก, แถบบน, เมนู, หน้า login
+   ───────────────────────────────────────────── */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--bg);
+}
+
+.app__main {
+  flex: 1;
+  overflow-y: auto;
+}
+.app__page { height: 100%; }
+
+/* ── แถบบน ── */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.topbar__accent {
+  height: 4px;
+  background: var(--accent-bar);
+}
+.topbar__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  padding: var(--sp-12) 0;
+}
+
+/* กล่องกึ่งกลางความกว้างสูงสุดของทั้งแอป */
+.shell {
+  max-width: var(--shell-max);
+  margin: 0 auto;
+  padding: 0 var(--sp-20);
+}
+
+/* ── โลโก้ ── */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-10);
+}
+.brand__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-md);
+  background: var(--brand-600);
+  color: var(--text-invert);
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.brand:hover .brand__mark { background: var(--brand-700); }
+.brand__text { line-height: 1; }
+.brand__name { font-weight: var(--fw-semibold); color: var(--text); }
+.brand__sub {
+  margin-top: var(--sp-4);
+  font-size: var(--fs-2xs);
+  color: var(--text-muted);
+}
+
+/* ── กล่องผู้ใช้มุมขวา ── */
+.userbox {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  margin-left: auto;
+}
+.userbox__meta { text-align: right; }
+.userbox__name {
+  font-size: var(--fs-sm);
+  color: var(--text-body);
+  line-height: 1;
+}
+.userbox__role {
+  margin-top: var(--sp-4);
+  font-size: var(--fs-2xs);
+  color: var(--brand-600);
+}
+@media (max-width: 639px) {
+  .userbox__meta { display: none; }
+}
+
+/* ── เมนูหลัก ── */
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-8) 0;
+  border-top: 1px solid var(--border);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+.nav__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-8);
+  padding: var(--sp-8) var(--sp-12);
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  transition: all var(--dur-fast) var(--ease);
+}
+.nav__link:hover { background: var(--surface-alt); color: var(--text); }
+.nav__link.is-active {
+  background: var(--brand-50);
+  border-color: var(--brand-200);
+  color: var(--brand-700);
+  font-weight: var(--fw-medium);
+}
+
+/* ── เนื้อหาแต่ละหน้า ── */
+.page {
+  max-width: var(--shell-max);
+  margin: 0 auto;
+  padding: var(--sp-24);
+}
+.page--wide { max-width: 42rem; }
+/* หน้าที่ต้องใช้ความสูงเต็มจอ (ตารางนัด) */
+.page--full {
+  display: flex;
+  flex-direction: column;
+  max-width: none;
+  height: 100%;
+}
+.page__loading {
+  padding: var(--sp-24);
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-16);
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.back-link:hover { color: var(--text-body); }
+
+/* ── หน้าเข้าสู่ระบบ ── */
+.login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--sp-16);
+  background: var(--bg);
+}
+.login__box { width: 100%; max-width: 24rem; }
+.login__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: var(--sp-24);
+}
+.login__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--sp-12);
+  border-radius: var(--r-lg);
+  background: var(--brand-600);
+  color: var(--text-invert);
+}
+.login__title {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  color: var(--text);
+}
+.login__sub { font-size: var(--fs-sm); color: var(--text-muted); }
+.login__card {
+  padding: var(--sp-24);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+}
+.login__error { font-size: var(--fs-sm); color: var(--red-500); }
+.login__hint {
+  margin-top: var(--sp-16);
+  padding: var(--sp-12);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+/* ── ตารางสรุปหน้าแดชบอร์ด ── */
+.dash-grid {
+  display: grid;
+  gap: var(--sp-16);
+}
+@media (min-width: 768px) {
+  .dash-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

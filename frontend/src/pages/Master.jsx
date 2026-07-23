@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Plus, Trash2, Building2, Stethoscope, Ruler, Tags, CreditCard, DoorOpen } from 'lucide-react'
 import api from '../lib/api'
 import { canManage } from '../lib/auth'
-import { PageHeader, Btn, inputCls, Empty, Card } from '../components/ui'
+import { PageHeader, Btn, Empty, Card } from '../components/ui'
 
 const TABS = [
   { key: 'rooms', label: 'ห้อง', icon: DoorOpen },
@@ -18,12 +18,11 @@ export default function Master() {
   const [tab, setTab] = useState('departments')
 
   return (
-    <div className="p-6 mx-auto max-w-[1320px]">
+    <div className="page">
       <PageHeader title="ข้อมูลหลัก (Master Data)" subtitle="ตั้งค่ารายการอ้างอิงที่ใช้ทั้งระบบ" />
-      <div className="flex gap-1 mb-4 flex-wrap">
+      <div className="tabs">
         {TABS.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            className={`px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5 ${tab === t.key ? 'bg-brand-600 text-white' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+          <button key={t.key} onClick={() => setTab(t.key)} className={`tab${tab === t.key ? ' is-active' : ''}`}>
             <t.icon size={13} /> {t.label}
           </button>
         ))}
@@ -39,7 +38,7 @@ export default function Master() {
   )
 }
 
-function SimpleList({ manage, path, label, placeholder }) {
+function SimpleList({ manage, path, placeholder }) {
   const [items, setItems] = useState([])
   const [name, setName] = useState('')
   const fetch = () => api.get(`/master/${path}`).then(r => setItems(r.data))
@@ -47,19 +46,19 @@ function SimpleList({ manage, path, label, placeholder }) {
   async function add(e) { e.preventDefault(); if (!name) return; await api.post(`/master/${path}`, { name }); setName(''); fetch() }
   async function del(id) { if (confirm('ลบรายการนี้?')) { await api.delete(`/master/${path}/${id}`); fetch() } }
   return (
-    <Card className="p-4">
+    <Card pad="md">
       {manage && (
-        <form onSubmit={add} className="flex gap-2 mb-3">
-          <input className={inputCls} placeholder={placeholder} value={name} onChange={e => setName(e.target.value)} />
+        <form onSubmit={add} className="row gap-8 mb-12">
+          <input className="input" placeholder={placeholder} value={name} onChange={e => setName(e.target.value)} />
           <Btn type="submit"><Plus size={14} /></Btn>
         </form>
       )}
       {items.length === 0 ? <Empty /> : (
-        <div className="space-y-1">
+        <div className="list">
           {items.map(it => (
-            <div key={it.id} className="flex items-center justify-between border-b border-gray-50 last:border-0 py-2 text-sm">
-              <span className="text-gray-800">{it.name}</span>
-              {manage && <button onClick={() => del(it.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={13} /></button>}
+            <div key={it.id} className="list__row">
+              <span>{it.name}</span>
+              {manage && <button onClick={() => del(it.id)} className="icon-btn icon-btn--danger icon-btn--quiet"><Trash2 size={13} /></button>}
             </div>
           ))}
         </div>
@@ -76,20 +75,24 @@ function NamedNote({ manage, path, nameLabel }) {
   async function add(e) { e.preventDefault(); if (!form.name) return; await api.post(`/master/${path}`, form); setForm({ name: '', note: '' }); fetch() }
   async function del(id) { if (confirm('ลบรายการนี้?')) { await api.delete(`/master/${path}/${id}`); fetch() } }
   return (
-    <Card className="p-4">
+    <Card pad="md">
       {manage && (
-        <form onSubmit={add} className="flex gap-2 mb-3">
-          <input className={inputCls} placeholder={nameLabel} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-          <input className={inputCls} placeholder="หมายเหตุ" value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} />
+        <form onSubmit={add} className="row gap-8 mb-12">
+          <input className="input" placeholder={nameLabel} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+          <input className="input" placeholder="หมายเหตุ" value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} />
           <Btn type="submit"><Plus size={14} /></Btn>
         </form>
       )}
       {items.length === 0 ? <Empty /> : (
-        <div className="space-y-1">
+        <div className="list">
           {items.map(it => (
-            <div key={it.id} className="flex items-center justify-between border-b border-gray-50 last:border-0 py-2 text-sm">
-              <span className="text-gray-800">{it.name}{it.note ? <span className="text-gray-500"> · {it.note}</span> : ''}{it.active === false ? <span className="text-gray-400"> · ปิด</span> : ''}</span>
-              {manage && <button onClick={() => del(it.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={13} /></button>}
+            <div key={it.id} className="list__row">
+              <span>
+                {it.name}
+                {it.note ? <span className="muted"> · {it.note}</span> : ''}
+                {it.active === false ? <span className="soft"> · ปิด</span> : ''}
+              </span>
+              {manage && <button onClick={() => del(it.id)} className="icon-btn icon-btn--danger icon-btn--quiet"><Trash2 size={13} /></button>}
             </div>
           ))}
         </div>
@@ -106,20 +109,20 @@ function Departments({ manage }) {
   async function add(e) { e.preventDefault(); if (!form.name) return; await api.post('/master/departments', form); setForm({ name: '', note: '' }); fetch() }
   async function del(id) { if (confirm('ลบแผนกนี้?')) { await api.delete(`/master/departments/${id}`); fetch() } }
   return (
-    <Card className="p-4">
+    <Card pad="md">
       {manage && (
-        <form onSubmit={add} className="flex gap-2 mb-3">
-          <input className={inputCls} placeholder="ชื่อแผนก" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-          <input className={inputCls} placeholder="หมายเหตุ" value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} />
+        <form onSubmit={add} className="row gap-8 mb-12">
+          <input className="input" placeholder="ชื่อแผนก" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+          <input className="input" placeholder="หมายเหตุ" value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} />
           <Btn type="submit"><Plus size={14} /></Btn>
         </form>
       )}
       {items.length === 0 ? <Empty /> : (
-        <div className="space-y-1">
+        <div className="list">
           {items.map(d => (
-            <div key={d.id} className="flex items-center justify-between border-b border-gray-50 last:border-0 py-2 text-sm">
-              <span className="text-gray-800">{d.name}{d.note ? <span className="text-gray-500"> · {d.note}</span> : ''}</span>
-              {manage && <button onClick={() => del(d.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={13} /></button>}
+            <div key={d.id} className="list__row">
+              <span>{d.name}{d.note ? <span className="muted"> · {d.note}</span> : ''}</span>
+              {manage && <button onClick={() => del(d.id)} className="icon-btn icon-btn--danger icon-btn--quiet"><Trash2 size={13} /></button>}
             </div>
           ))}
         </div>
@@ -137,25 +140,25 @@ function Services({ manage }) {
   async function add(e) { e.preventDefault(); if (!form.name) return; await api.post('/master/services', form); setForm({ name: '', price: '', departmentId: '' }); fetch() }
   async function del(id) { if (confirm('ลบบริการนี้?')) { await api.delete(`/master/services/${id}`); fetch() } }
   return (
-    <Card className="p-4">
+    <Card pad="md">
       {manage && (
-        <form onSubmit={add} className="grid grid-cols-12 gap-2 mb-3">
-          <input className={inputCls + ' col-span-5'} placeholder="ชื่อบริการ" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-          <input type="number" className={inputCls + ' col-span-2'} placeholder="ราคา" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} />
-          <select className={inputCls + ' col-span-4'} value={form.departmentId} onChange={e => setForm(f => ({ ...f, departmentId: e.target.value }))}>
+        <form onSubmit={add} className="grid-12 mb-12">
+          <input className="input span-5" placeholder="ชื่อบริการ" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+          <input type="number" className="input span-2" placeholder="ราคา" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} />
+          <select className="input span-4" value={form.departmentId} onChange={e => setForm(f => ({ ...f, departmentId: e.target.value }))}>
             <option value="">ไม่ระบุแผนก</option>{depts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
-          <Btn type="submit" className="col-span-1"><Plus size={14} /></Btn>
+          <Btn type="submit" className="span-1"><Plus size={14} /></Btn>
         </form>
       )}
       {items.length === 0 ? <Empty /> : (
-        <div className="space-y-1">
+        <div className="list">
           {items.map(s => (
-            <div key={s.id} className="flex items-center justify-between border-b border-gray-50 last:border-0 py-2 text-sm">
-              <span className="text-gray-800">{s.code} · {s.name} <span className="text-gray-500">{s.department ? `· ${s.department.name}` : ''}</span></span>
-              <span className="flex items-center gap-3">
-                <span className="text-gray-600">฿{s.price.toLocaleString()}</span>
-                {manage && <button onClick={() => del(s.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={13} /></button>}
+            <div key={s.id} className="list__row">
+              <span>{s.code} · {s.name} <span className="muted">{s.department ? `· ${s.department.name}` : ''}</span></span>
+              <span className="row gap-12">
+                <span className="muted">฿{s.price.toLocaleString()}</span>
+                {manage && <button onClick={() => del(s.id)} className="icon-btn icon-btn--danger icon-btn--quiet"><Trash2 size={13} /></button>}
               </span>
             </div>
           ))}

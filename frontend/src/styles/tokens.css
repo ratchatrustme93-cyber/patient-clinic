@@ -1,0 +1,130 @@
+/* ─────────────────────────────────────────────
+   Design tokens — ค่ากลางของทั้งระบบ
+   แก้ที่นี่ที่เดียว หน้าตาทั้งแอปเปลี่ยนตาม
+
+   โทนหลัก: สว่าง สดใส โปร่ง
+   พื้นฟ้าอ่อนมาก · การ์ดขาวสะอาด · ฟ้าสดเป็นสีนำ
+   เงาเป็นสีฟ้าจาง ๆ (ไม่ใช่สีเทาดำ) หน้าจอเลยดูโปร่งไม่ทึบ
+   ───────────────────────────────────────────── */
+:root {
+  /* ── สีนำ: ฟ้าสดใส ── */
+  --brand-50:  #eff8ff;
+  --brand-100: #daeeff;
+  --brand-200: #bce1ff;
+  --brand-300: #8ecdff;
+  --brand-400: #5ab2fb;
+  --brand-500: #3596f2;
+  --brand-600: #1f7ad6;
+  --brand-700: #1a63ae;
+  --brand-800: #1a538d;
+  --brand-900: #1a4674;
+
+  /* ── สีกลาง: เทาอมฟ้า ทำให้ขาวดูสะอาดขึ้น ── */
+  --gray-50:  #f7fafd;
+  --gray-100: #eef4fa;
+  --gray-200: #e3ecf6;
+  --gray-300: #cddcec;
+  --gray-400: #9db0c7;
+  --gray-500: #6b809b;
+  --gray-600: #556984;
+  --gray-700: #3c506b;
+  --gray-800: #1c2b3f;
+  --gray-900: #0f1b2d;
+
+  /* ── สีสถานะ: พาสเทลสดใส ── */
+  --red-50:  #fff1f3;  --red-100: #ffe4e8;  --red-200: #fecdd3;
+  --red-500: #f43f5e;  --red-600: #e11d48;  --red-700: #be123c;
+
+  --amber-50:  #fffaeb;  --amber-100: #fef3c7;  --amber-200: #fde68a;
+  --amber-500: #f9b115;  --amber-600: #d97706;  --amber-700: #b45309;
+
+  --green-50:  #ecfdf5;  --green-100: #d1fae5;  --green-200: #a7f3d0;
+  --green-500: #10b981;  --green-600: #059669;  --green-700: #047857;
+
+  /* น้ำเงินอมม่วง — แยกให้ต่างจากสีนำที่เป็นฟ้า */
+  --blue-50:  #eef2ff;  --blue-100: #e0e7ff;  --blue-200: #c7d2fe;
+  --blue-500: #6366f1;  --blue-600: #4f46e5;  --blue-700: #4338ca;
+
+  --purple-50:  #faf5ff;  --purple-100: #f3e8ff;  --purple-200: #e9d5ff;
+  --purple-500: #a855f7;  --purple-600: #9333ea;  --purple-700: #7e22ce;
+
+  /* ── พื้นผิว / ตัวอักษร ── */
+  --bg:            #f2f8fd;
+  --surface:       #ffffff;
+  --surface-alt:   var(--gray-50);
+  --surface-sunk:  var(--gray-100);
+  --border:        var(--gray-200);
+  --border-soft:   var(--gray-100);
+
+  --text:         var(--gray-800);
+  --text-strong:  var(--gray-900);
+  --text-body:    var(--gray-700);
+  --text-muted:   var(--gray-500);
+  --text-soft:    var(--gray-400);
+  --text-invert:  #ffffff;
+
+  /* ── ตัวอักษร ── */
+  --font-sans: 'Inter', 'Sarabun', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+
+  --fs-2xs: 0.6875rem;  /* 11px — ป้ายเล็กในตารางนัด */
+  --fs-xs:  0.75rem;    /* 12px */
+  --fs-sm:  0.875rem;   /* 14px — ขนาดมาตรฐานของ UI */
+  --fs-md:  1rem;       /* 16px */
+  --fs-lg:  1.125rem;   /* 18px */
+  --fs-xl:  1.25rem;    /* 20px */
+  --fs-2xl: 1.5rem;     /* 24px */
+
+  --fw-normal:   400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+
+  --lh-tight: 1.25;
+  --lh-base:  1.5;
+
+  /* ── ระยะห่าง (ชื่อ = พิกเซล) ── */
+  --sp-2:  2px;
+  --sp-4:  4px;
+  --sp-6:  6px;
+  --sp-8:  8px;
+  --sp-10: 10px;
+  --sp-12: 12px;
+  --sp-16: 16px;
+  --sp-20: 20px;
+  --sp-24: 24px;
+  --sp-32: 32px;
+  --sp-40: 40px;
+
+  /* ── มุมโค้ง: มนขึ้นกว่าเดิม ดูนุ่มและเป็นมิตร ── */
+  --r-sm:   8px;   /* ชิปเล็ก, การ์ดนัด */
+  --r-md:  10px;   /* input, ปุ่ม, แท็บ */
+  --r-lg:  16px;   /* การ์ด */
+  --r-xl:  20px;   /* modal, widget ลอย */
+  --r-pill: 999px;
+
+  /* ── เงา: ย้อมฟ้า ไม่ใช่ดำ — ทำให้หน้าจอดูโปร่ง ── */
+  --shadow-sm: 0 1px 2px rgb(31 122 214 / 0.07);
+  --shadow-md: 0 6px 16px -4px rgb(31 122 214 / 0.14);
+  --shadow-lg: 0 12px 28px -8px rgb(31 122 214 / 0.16);
+  --shadow-xl: 0 24px 48px -12px rgb(26 70 116 / 0.22);
+
+  /* ── โฟกัส ── */
+  --ring: 0 0 0 3px var(--brand-200);
+
+  /* ── การเคลื่อนไหว ── */
+  --ease:      cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur-fast:  0.15s;
+  --dur:       0.22s;
+  --dur-slow:  0.3s;
+
+  /* ── ค่าเฉพาะจุด (แยกออกมาเพื่อให้ theme เปลี่ยนได้) ── */
+  --accent-bar: linear-gradient(90deg, #38bdf8 0%, #34d399 45%, #a78bfa 100%);
+  --scrim: rgb(15 27 45 / 0.4);            /* ฉากหลัง modal */
+  --tint-drop: rgb(31 122 214 / 0.07);     /* ช่องที่ลากไปวางได้ */
+  --tint-conflict: rgb(244 63 94 / 0.07);  /* ช่องที่นัดชนกัน */
+  --numeric: tabular-nums;                  /* คอลัมน์ตัวเลขตรงกัน */
+
+  /* ── โครงหน้า ── */
+  --shell-max: 1320px;
+}
