@@ -27,6 +27,8 @@ router.get('/', auth, async (req, res) => {
   } else if (from && to) {
     where.scheduledAt = { gte: new Date(from), lte: new Date(to) }
   }
+  // หมอเห็นเฉพาะนัดของตัวเอง
+  if (req.user.role === 'DOCTOR') where.doctorId = req.user.id
   res.json(await prisma.appointment.findMany({ where, include: INCLUDE, orderBy: { scheduledAt: 'asc' } }))
 })
 

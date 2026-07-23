@@ -15,6 +15,8 @@ const INCLUDE = {
 // GET /api/visits?patientId=
 router.get('/', auth, async (req, res) => {
   const where = req.query.patientId ? { patientId: +req.query.patientId } : {}
+  // หมอเห็นเฉพาะการรักษาของตัวเอง
+  if (req.user.role === 'DOCTOR') where.doctorId = req.user.id
   res.json(await prisma.visit.findMany({ where, include: INCLUDE, orderBy: { visitDate: 'desc' } }))
 })
 

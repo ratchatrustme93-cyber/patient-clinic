@@ -5,9 +5,18 @@ import { auth } from '../middleware/auth.js'
 const router = Router()
 
 // GET /api/overview — สรุปภาพรวมสำหรับ dashboard / master
-router.get('/', auth, async (_req, res) => {
+router.get('/', auth, async (req, res) => {
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
   const todayEnd = new Date(todayStart); todayEnd.setDate(todayEnd.getDate() + 1)
+
+  // หมอเห็นเฉพาะเคสตัวเอง → scope เฉพาะตัวเลขที่เป็น "เคส"
+  const isDoctor = req.user.role === 'DOCTOR'
+  const myId = req.user.id
+  const apptScope = isDoctor ? { doctorId: myId } : {}
+  const visitScope = isDoctor ? { doctorId: myId } : {}
+  const patientScope = isDoctor
+    ? { OR: [{ appointments: { some: { doctorId: myId } } }, { visits: { some: { doctorId: myId } } }] }
+    : {}
 
   const [
     patients, employees, doctors, assistants,
@@ -15,13 +24,13 @@ router.get('/', auth, async (_req, res) => {
     items, materials, services,
     unpaidBills, paidAgg, lowMaterials, todayAppointments, recentBills,
   ] = await Promise.all([
-    prisma.patient.count(),
+    prisma.patient.count({ where: patientScope }),
     prisma.user.count(),
     prisma.user.count({ where: { role: 'DOCTOR' } }),
     prisma.user.count({ where: { role: 'ASSISTANT' } }),
-    prisma.appointment.count(),
-    prisma.appointment.count({ where: { scheduledAt: { gte: todayStart, lt: todayEnd } } }),
-    prisma.visit.count(),
+    prisma.appointment.count({ where: apptScope }),
+    prisma.appointment.count({ where: { ...apptScope, scheduledAt: { gte: todayStart, lt: todayEnd } } }),
+    prisma.visit.count({ where: visitScope }),
     prisma.item.count(),
     prisma.material.count(),
     prisma.service.count(),
@@ -29,7 +38,7 @@ router.get('/', auth, async (_req, res) => {
     prisma.bill.aggregate({ _sum: { total: true }, where: { status: 'PAID' } }),
     prisma.material.findMany({ where: { reorderLevel: { not: null } } }),
     prisma.appointment.findMany({
-      where: { scheduledAt: { gte: todayStart, lt: todayEnd } },
+      where: { ...apptScope, scheduledAt: { gte: todayStart, lt: todayEnd } },
       include: { patient: { select: { hn: true, name: true } }, doctor: { select: { name: true } }, service: true },
       orderBy: { scheduledAt: 'asc' },
     }),
@@ -40,15 +49,19 @@ router.get('/', auth, async (_req, res) => {
   ])
 
   res.json({
+    scoped: isDoctor, // หมอ = เห็นเฉพาะเคสตัวเอง (ซ่อนคลัง/รายได้/บิล)
     counts: {
       patients, employees, doctors, assistants,
       appointments: apptTotal, appointmentsToday: apptToday, visits,
-      items, materials, services, unpaidBills,
+      items: isDoctor ? 0 : items,
+      materials: isDoctor ? 0 : materials,
+      services: isDoctor ? 0 : services,
+      unpaidBills: isDoctor ? 0 : unpaidBills,
     },
-    revenuePaid: paidAgg._sum.total || 0,
-    lowMaterials: lowMaterials.filter(m => m.stockQty <= m.reorderLevel),
+    revenuePaid: isDoctor ? 0 : (paidAgg._sum.total || 0),
+    lowMaterials: isDoctor ? [] : lowMaterials.filter(m => m.stockQty <= m.reorderLevel),
     todayAppointments,
-    recentBills,
+    recentBills: isDoctor ? [] : recentBills,
   })
 })
 

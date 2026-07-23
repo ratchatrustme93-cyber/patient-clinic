@@ -27,23 +27,24 @@ export default function Dashboard() {
 
   if (!data) return <div className="p-6 text-gray-500 text-sm">กำลังโหลด...</div>
   const c = data.counts
+  const scoped = data.scoped // หมอ = เห็นเฉพาะเคสตัวเอง
 
   return (
     <div className="p-6 mx-auto max-w-[1320px]">
-      <PageHeader title={`สวัสดี, ${user?.name || ''}`} subtitle={format(new Date(), 'EEEE d MMMM yyyy', { locale: th })} />
+      <PageHeader title={`สวัสดี, ${user?.name || ''}`} subtitle={scoped ? 'แสดงเฉพาะเคสของคุณ' : format(new Date(), 'EEEE d MMMM yyyy', { locale: th })} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <StatTile icon={Calendar} label="นัดวันนี้" value={c.appointmentsToday} tone="brand" />
-        <StatTile icon={Users} label="คนไข้ทั้งหมด" value={c.patients} tone="blue" />
-        <StatTile icon={ClipboardList} label="การรักษา (visit)" value={c.visits} tone="purple" />
-        <StatTile icon={Wallet} label="รายรับ (ชำระแล้ว)" value={`฿${data.revenuePaid.toLocaleString()}`} tone="green" />
+        <StatTile icon={Calendar} label={scoped ? 'นัดวันนี้ (ของฉัน)' : 'นัดวันนี้'} value={c.appointmentsToday} tone="brand" />
+        <StatTile icon={Users} label={scoped ? 'คนไข้ของฉัน' : 'คนไข้ทั้งหมด'} value={c.patients} tone="blue" />
+        <StatTile icon={ClipboardList} label={scoped ? 'การรักษาของฉัน' : 'การรักษา (visit)'} value={c.visits} tone="purple" />
+        {!scoped && <StatTile icon={Wallet} label="รายรับ (ชำระแล้ว)" value={`฿${data.revenuePaid.toLocaleString()}`} tone="green" />}
         <StatTile icon={Stethoscope} label="แพทย์" value={c.doctors} tone="brand" />
         <StatTile icon={HeartHandshake} label="ผู้ช่วยแพทย์" value={c.assistants} tone="purple" />
-        <StatTile icon={Package} label="สินค้า" value={c.items} tone="amber" />
-        <StatTile icon={Boxes} label="วัสดุ" value={c.materials} tone="amber" />
+        {!scoped && <StatTile icon={Package} label="สินค้า" value={c.items} tone="amber" />}
+        {!scoped && <StatTile icon={Boxes} label="วัสดุ" value={c.materials} tone="amber" />}
       </div>
 
-      {data.lowMaterials.length > 0 && (
+      {!scoped && data.lowMaterials.length > 0 && (
         <div className="mb-6 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 flex items-start gap-2">
           <AlertTriangle size={16} className="text-amber-500 mt-0.5 flex-shrink-0" />
           <div>
@@ -53,9 +54,9 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className={`grid gap-4 ${scoped ? '' : 'md:grid-cols-2'}`}>
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-2"><Calendar size={14} />นัดหมายวันนี้</h3>
+          <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-2"><Calendar size={14} />{scoped ? 'นัดหมายวันนี้ (ของฉัน)' : 'นัดหมายวันนี้'}</h3>
           <Card className="p-3">
             {data.todayAppointments.length === 0 ? <Empty>ไม่มีนัดวันนี้</Empty> : (
               <div className="space-y-1.5">
@@ -76,7 +77,7 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        <div>
+        {!scoped && <div>
           <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-2"><Receipt size={14} />บิลล่าสุด</h3>
           <Card className="p-3">
             {data.recentBills.length === 0 ? <Empty>ยังไม่มีบิล</Empty> : (
@@ -95,7 +96,7 @@ export default function Dashboard() {
               </div>
             )}
           </Card>
-        </div>
+        </div>}
       </div>
     </div>
   )

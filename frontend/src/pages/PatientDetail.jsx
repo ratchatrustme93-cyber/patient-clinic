@@ -27,9 +27,11 @@ export default function PatientDetail() {
   const [modal, setModal] = useState(null) // 'edit' | 'report' | 'bill'
   const [viewReport, setViewReport] = useState(null)
   const [tab, setTab] = useState('personal')
+  const [accessErr, setAccessErr] = useState('')
   const voice = useVoiceRecorder()
 
   const fetch = () => api.get(`/patients/${id}`).then(r => setPatient(r.data))
+    .catch(e => setAccessErr(e.response?.status === 403 ? 'คุณไม่มีสิทธิ์เข้าถึงคนไข้รายนี้ (เห็นได้เฉพาะคนไข้ของตัวเอง)' : 'ไม่พบข้อมูลคนไข้'))
   useEffect(() => {
     fetch()
     api.get('/employees?role=DOCTOR&active=1').then(r => setDoctors(r.data))
@@ -37,6 +39,12 @@ export default function PatientDetail() {
     api.get('/master/payment-methods').then(r => setMethods(r.data))
   }, [id])
 
+  if (accessErr) return (
+    <div className="p-6 mx-auto max-w-2xl">
+      <button onClick={() => nav(-1)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-600 mb-4"><ArrowLeft size={14} /> กลับ</button>
+      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-6 text-center text-amber-700 text-sm">🔒 {accessErr}</div>
+    </div>
+  )
   if (!patient) return <div className="p-6 text-gray-500 text-sm">กำลังโหลด...</div>
 
   const ageText = patient.birthdate ? `${differenceInYears(new Date(), new Date(patient.birthdate))} ปี` : '—'

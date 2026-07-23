@@ -36,13 +36,18 @@ function patientData(b) {
 
 router.get('/', auth, async (req, res) => {
   const { search } = req.query
-  const where = search
-    ? { OR: [
-        { name: { contains: search, mode: 'insensitive' } },
-        { hn: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search } },
-      ] }
-    : {}
+  const conds = []
+  if (search) conds.push({ OR: [
+    { name: { contains: search, mode: 'insensitive' } },
+    { hn: { contains: search, mode: 'insensitive' } },
+    { phone: { contains: search } },
+  ] })
+  // หมอเห็นเฉพาะคนไข้ที่ตัวเองมีนัดหรือเคยรักษา
+  if (req.user.role === 'DOCTOR') conds.push({ OR: [
+    { appointments: { some: { doctorId: req.user.id } } },
+    { visits: { some: { doctorId: req.user.id } } },
+  ] })
+  const where = conds.length ? { AND: conds } : {}
   res.json(await prisma.patient.findMany({ where, orderBy: { id: 'desc' }, omit: { photo: true } }))
 })
 
@@ -66,6 +71,13 @@ router.get('/:id', auth, async (req, res) => {
     },
   })
   if (!patient) return res.status(404).json({ error: 'Not found' })
+  // หมอเปิดได้เฉพาะคนไข้ที่ตัวเองมีนัด/เคยรักษา · และเห็นเฉพาะนัด/การรักษาของตัวเอง
+  if (req.user.role === 'DOCTOR') {
+    const mine = patient.appointments.some(a => a.doctorId === req.user.id) || patient.visits.some(v => v.doctorId === req.user.id)
+    if (!mine) return res.status(403).json({ error: 'ไม่มีสิทธิ์เข้าถึงคนไข้รายนี้' })
+    patient.appointments = patient.appointments.filter(a => a.doctorId === req.user.id)
+    patient.visits = patient.visits.filter(v => v.doctorId === req.user.id)
+  }
   res.json(patient)
 })
 

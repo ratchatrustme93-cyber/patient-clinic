@@ -33,24 +33,33 @@ app.use('/api/voice-records', voiceRouter)
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 
-async function logAdmins() {
+// รหัสผ่านเริ่มต้นตาม role (ตั้งใน prisma/seed.js) — DB เก็บเป็น bcrypt hash
+const SEED_PW = { MASTER: 'master123', ADMIN: 'admin123', DOCTOR: 'doctor123', ASSISTANT: 'assistant123', EMPLOYEE: 'employee123' }
+
+async function logUsers() {
   try {
-    const admins = await prisma.user.findMany({
-      where: { role: { in: ['MASTER', 'ADMIN'] } },
-      select: { id: true, code: true, name: true, email: true, role: true },
+    const users = await prisma.user.findMany({
+      select: { code: true, name: true, email: true, role: true },
       orderBy: { id: 'asc' },
     })
-    console.log('\n===== MASTER / ADMIN USERS =====')
-    if (admins.length === 0) console.log('  (ยังไม่มี — รัน `npm run db:seed`)')
-    admins.forEach(a => console.log(`  ${a.role.padEnd(7)} ${a.code}  ${a.name} <${a.email}>`))
-    console.log('================================\n')
+    console.log('\n╔══════════════════ บัญชีเข้าระบบทั้งหมด (login) ══════════════════╗')
+    if (users.length === 0) {
+      console.log('  (ยังไม่มี user — รัน `npm run db:seed`)')
+    } else {
+      users.forEach(u => {
+        const cred = `${u.email}  /  ${SEED_PW[u.role] || '(รหัสถูกแก้)'}`
+        console.log(`  ${u.role.padEnd(9)} ${cred.padEnd(46)} ${u.name}`)
+      })
+      console.log(`  ── รวม ${users.length} บัญชี · รหัสอิงตาม seed.js (ถ้าแก้รหัสผ่านหน้าเว็บ ค่าอาจไม่ตรง) ──`)
+    }
+    console.log('╚══════════════════════════════════════════════════════════════════╝\n')
   } catch (e) {
-    console.error('logAdmins error:', e.message)
+    console.error('logUsers error:', e.message)
   }
 }
 
 const PORT = process.env.PORT || 3008
 app.listen(PORT, async () => {
   console.log(`Patient Clinic API running on :${PORT}`)
-  await logAdmins()
+  await logUsers()
 })
