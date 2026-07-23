@@ -1,20 +1,15 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { format, addDays, subDays, isSameDay } from 'date-fns'
-import { th } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Plus, Trash2, GripVertical, DoorOpen, AlertTriangle, Clock } from 'lucide-react'
 import api from '../lib/api'
 import { canManage } from '../lib/auth'
+import { useT } from '../lib/i18n'
 import { PageHeader, Btn, Modal, Field, Card } from '../components/ui'
 
-// [ข้อความสถานะ, tone class]
-const STATUS = {
-  SCHEDULED:   ['นัดไว้', 'tone-gray'],
-  CONFIRMED:   ['ยืนยัน', 'tone-blue'],
-  ARRIVED:     ['มาถึง', 'tone-brand'],
-  IN_PROGRESS: ['กำลังตรวจ', 'tone-purple'],
-  COMPLETED:   ['เสร็จ', 'tone-green'],
-  CANCELLED:   ['ยกเลิก', 'tone-quiet'],
-  NO_SHOW:     ['ไม่มา', 'tone-red'],
+// tone class ของแต่ละสถานะ · ข้อความอยู่ใน lib/locales (enum.apptStatus)
+const STATUS_TONE = {
+  SCHEDULED: 'tone-gray', CONFIRMED: 'tone-blue', ARRIVED: 'tone-brand',
+  IN_PROGRESS: 'tone-purple', COMPLETED: 'tone-green', CANCELLED: 'tone-quiet', NO_SHOW: 'tone-red',
 }
 const EMPTY = { patientId: '', doctorId: '', assistantId: '', departmentId: '', serviceId: '', roomId: '', scheduledAt: '', durationMin: 30, note: '', status: 'SCHEDULED' }
 const DURATIONS = [15, 30, 45, 60, 90, 120]
@@ -29,6 +24,7 @@ const readMin = (key, def) => { const v = parseInt(localStorage.getItem(key), 10
 
 export default function Appointments() {
   const manage = canManage()
+  const { t, dateLocale } = useT()
   const [date, setDate] = useState(new Date())
   const [now, setNow] = useState(new Date())
   const [appts, setAppts] = useState([])
@@ -71,7 +67,7 @@ export default function Appointments() {
   const set = f => e => setForm(p => ({ ...p, [f]: e.target.value }))
   const dateStr = format(date, 'yyyy-MM-dd')
   const fetch = () => api.get(`/appointments?date=${dateStr}`).then(r => setAppts(r.data))
-  const loadRooms = () => api.get('/master/rooms').then(r => setRooms(r.data.filter(x => x.active)))
+  const loadRooms = () => api.get('/master/rooms?activeOnly=1').then(r => setRooms(r.data))
   useEffect(() => { fetch() }, [dateStr])
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 30000); return () => clearInterval(t) }, [])
   useEffect(() => {
@@ -79,8 +75,8 @@ export default function Appointments() {
     api.get('/patients').then(r => setPatients(r.data))
     api.get('/employees?role=DOCTOR&active=1').then(r => setDoctors(r.data))
     api.get('/employees?role=ASSISTANT&active=1').then(r => setAssistants(r.data))
-    api.get('/master/departments').then(r => setDepartments(r.data))
-    api.get('/master/services').then(r => setServices(r.data))
+    api.get('/master/departments?activeOnly=1').then(r => setDepartments(r.data))
+    api.get('/master/services?activeOnly=1').then(r => setServices(r.data))
   }, [])
 
   function openCreate() { setEditId(null); setForm({ ...EMPTY, scheduledAt: `${dateStr}T09:00` }); setOpen(true) }
@@ -112,7 +108,7 @@ export default function Appointments() {
     } finally { setSaving(false) }
   }
   async function cancelById(id) {
-    if (!confirm('ยกเลิกนัดนี้?')) return
+    if (!confirm(t('appointments.cancelConfirm'))) return
     await api.delete(`/appointments/${id}`); closeModal(); fetch()
   }
   async function addRoom(e) {
@@ -133,7 +129,7 @@ export default function Appointments() {
       idxOf(new Date(a.scheduledAt)) === idx
     ) || null
   }
-  const warnConflict = c => confirm(`⚠️ ห้องนี้มีนัดของ ${c.patient.name} เวลา ${format(new Date(c.scheduledAt), 'HH:mm')} อยู่แล้ว\nยืนยันจองซ้อนหรือไม่?`)
+  const warnConflict = c => confirm(t('appointments.conflictConfirm', { name: c.patient.name, time: format(new Date(c.scheduledAt), 'HH:mm') }))
 
   // ── Drag ด้วย window listeners (ทน re-render, ใช้ได้ทั้งเมาส์/ทัช) ──
   function onPointerDown(e, a) {
@@ -178,7 +174,7 @@ export default function Appointments() {
     window.addEventListener('pointercancel', up)
   }
 
-  const columns = [...rooms.map(r => ({ id: r.id, name: r.name })), { id: null, name: 'ยังไม่จัดห้อง' }]
+  const columns = [...rooms.map(r => ({ id: r.id, name: r.name })), { id: null, name: t('appointments.unassignedRoom') }]
   const colKey = id => (id == null ? 'none' : String(id))
   const colIndex = {}
   columns.forEach((c, i) => { colIndex[colKey(c.id)] = i })
@@ -198,7 +194,7 @@ export default function Appointments() {
   const formConflict = open ? conflictFor(form.roomId ? +form.roomId : null, form.scheduledAt ? new Date(form.scheduledAt) : null, editId) : null
   const startD = form.scheduledAt ? new Date(form.scheduledAt) : null
   const endHint = startD && !isNaN(startD)
-    ? `${format(startD, 'HH:mm')}–${format(new Date(startD.getTime() + (+form.durationMin || 30) * 60000), 'HH:mm')} น.`
+    ? `${format(startD, 'HH:mm')}–${format(new Date(startD.getTime() + (+form.durationMin || 30) * 60000), 'HH:mm')}`
     : ''
 
   const renderAppt = a => (
@@ -206,13 +202,13 @@ export default function Appointments() {
       key={a.id}
       onPointerDown={e => onPointerDown(e, a)}
       style={{ touchAction: 'none' }}
-      title="กดค้างแล้วลากเพื่อย้าย · แตะเพื่อแก้ไข"
-      className={`appt ${STATUS[a.status][1]}${a.status === 'CANCELLED' ? ' is-locked' : ''}${dragAppt?.id === a.id ? ' is-dragging' : ''}`}
+      title={t('appointments.dragHint')}
+      className={`appt ${STATUS_TONE[a.status]}${a.status === 'CANCELLED' ? ' is-locked' : ''}${dragAppt?.id === a.id ? ' is-dragging' : ''}`}
     >
       <GripVertical size={11} className="appt__grip" />
       <div className="grow-min">
         <p className="appt__title truncate">{format(new Date(a.scheduledAt), 'HH:mm')}{a.endAt ? `–${format(new Date(a.endAt), 'HH:mm')}` : ''} · {a.patient.name}</p>
-        <p className="appt__detail truncate">{[a.service?.name, a.doctor?.name].filter(Boolean).join(' · ') || STATUS[a.status][0]}</p>
+        <p className="appt__detail truncate">{[a.service?.name, a.doctor?.name].filter(Boolean).join(' · ') || t(`enum.apptStatus.${a.status}`)}</p>
       </div>
     </div>
   )
@@ -226,38 +222,38 @@ export default function Appointments() {
 
   return (
     <div className="page page--full">
-      <PageHeader title="ตารางนัด" subtitle="กดค้างที่การ์ดแล้วลากไปวางช่อง ห้อง × เวลา · แตะการ์ดเพื่อแก้ไข">
+      <PageHeader title={t('appointments.title')} subtitle={t('appointments.subtitle')}>
         <div className="row gap-8">
-          {manage && <Btn variant="ghost" onClick={() => setRoomOpen(true)}><DoorOpen size={14} /> เพิ่มห้อง</Btn>}
-          <Btn onClick={openCreate}><Plus size={14} /> สร้างนัด</Btn>
+          {manage && <Btn variant="ghost" onClick={() => setRoomOpen(true)}><DoorOpen size={14} /> {t('appointments.addRoom')}</Btn>}
+          <Btn onClick={openCreate}><Plus size={14} /> {t('appointments.create')}</Btn>
         </div>
       </PageHeader>
 
       <div className="sched__toolbar">
         <button onClick={() => setDate(d => subDays(d, 1))} className="sched__step"><ChevronLeft size={18} /></button>
-        <span className="sched__date">{format(date, 'EEEE d MMMM yyyy', { locale: th })}</span>
+        <span className="sched__date">{format(date, 'EEEE d MMMM yyyy', { locale: dateLocale })}</span>
         <button onClick={() => setDate(d => addDays(d, 1))} className="sched__step"><ChevronRight size={18} /></button>
-        <button onClick={() => setDate(new Date())} className="sched__today">วันนี้</button>
+        <button onClick={() => setDate(new Date())} className="sched__today">{t('appointments.today')}</button>
 
         <div className="sched__range">
           <Clock size={14} />
-          <span>ช่วงเวลา</span>
+          <span>{t('appointments.timeRange')}</span>
           <input type="time" step="1800" value={minToLabel(startMin)} onChange={e => setRange('start', e.target.value)} className="time-input" />
           <span>–</span>
           <input type="time" step="1800" value={minToLabel(endMin)} onChange={e => setRange('end', e.target.value)} className="time-input" />
-          <span className="sched__count">· {appts.filter(a => a.status !== 'CANCELLED').length} นัด · {rooms.length} ห้อง</span>
+          <span className="sched__count">{t('appointments.summary', { appts: appts.filter(a => a.status !== 'CANCELLED').length, rooms: rooms.length })}</span>
         </div>
       </div>
 
       {rooms.length === 0 && (
         <div className="alert alert--sm tone-amber mb-12">
-          ยังไม่มีห้อง — กด <span className="medium">เพิ่มห้อง</span> ด้านบน หรือที่เมนู <span className="medium">ข้อมูลหลัก → ห้อง</span>
+          {t('appointments.noRooms', { add: t('appointments.addRoom'), menu: t('appointments.masterRooms') })}
         </div>
       )}
 
       {outRange.length > 0 && (
         <Card pad="sm" className="mb-12">
-          <p className="tiny muted mb-8">นอกช่วง {minToLabel(startMin)}–{minToLabel(endMin)} (ลากลงตารางเพื่อจัดเวลา)</p>
+          <p className="tiny muted mb-8">{t('appointments.outsideRange', { from: minToLabel(startMin), to: minToLabel(endMin) })}</p>
           <div className="sched__outside">{outRange.map(a => renderAppt(a))}</div>
         </Card>
       )}
@@ -266,7 +262,7 @@ export default function Appointments() {
       <Card className="card--fill">
         <div className="sched__grid" style={gridStyle}>
           {/* หัวตาราง */}
-          <div style={{ gridColumn: 1, gridRow: 1 }} className="sched__corner">เวลา</div>
+          <div style={{ gridColumn: 1, gridRow: 1 }} className="sched__corner">{t('appointments.time')}</div>
           {columns.map((c, ci) => (
             <div key={colKey(c.id)} style={{ gridColumn: ci + 2, gridRow: 1 }}
               className={`sched__col-head${c.id == null ? ' sched__col-head--none' : ''}`}>
@@ -304,27 +300,27 @@ export default function Appointments() {
             if (ci == null) return null
             const durSlots = a.endAt ? Math.max(1, Math.round((new Date(a.endAt) - s) / (STEP * 60000))) : 1
             const span = Math.min(durSlots, slots.length - startIdx)
-            const st = STATUS[a.status]
+            const stTone = STATUS_TONE[a.status]
             const end = a.endAt ? new Date(a.endAt) : null
             const timeLabel = format(s, 'HH:mm') + (end ? `–${format(end, 'HH:mm')}` : '')
-            const detail = [a.service?.name, a.doctor?.name].filter(Boolean).join(' · ') || st[0]
+            const detail = [a.service?.name, a.doctor?.name].filter(Boolean).join(' · ') || t(`enum.apptStatus.${a.status}`)
             return (
               <div key={a.id}
                 onPointerDown={e => onPointerDown(e, a)}
                 style={{ gridColumn: ci + 2, gridRow: `${startIdx + 2} / span ${span}`, touchAction: 'none', pointerEvents: dragAppt ? 'none' : 'auto', zIndex: 10 }}
                 title={`${timeLabel} · ${a.patient.name} · ${detail}`}
-                className={`appt appt--block ${st[1]}${span >= 2 ? ' is-tall' : ''}${a.status === 'CANCELLED' ? ' is-locked' : ''}${dragAppt?.id === a.id ? ' is-dragging' : ''}`}
+                className={`appt appt--block ${stTone}${span >= 2 ? ' is-tall' : ''}${a.status === 'CANCELLED' ? ' is-locked' : ''}${dragAppt?.id === a.id ? ' is-dragging' : ''}`}
               >
                 {span >= 2 ? (
                   <>
                     <p className="appt__title truncate">{timeLabel} · {a.patient.name}</p>
                     <p className="appt__detail truncate">{detail}</p>
-                    {end && <span className="appt__end">ถึง {format(end, 'HH:mm')}</span>}
+                    {end && <span className="appt__end">{t('appointments.until', { time: format(end, 'HH:mm') })}</span>}
                   </>
                 ) : (
                   <div className="appt__oneline">
                     <span className="appt__title truncate">{format(s, 'HH:mm')} · {a.patient.name}</span>
-                    {end && <span className="appt__title no-shrink ml-auto">ถึง {format(end, 'HH:mm')}</span>}
+                    {end && <span className="appt__title no-shrink ml-auto">{t('appointments.until', { time: format(end, 'HH:mm') })}</span>}
                   </div>
                 )}
               </div>
@@ -347,95 +343,95 @@ export default function Appointments() {
       {dragAppt && (
         <div ref={ghostRef} className="drag-ghost"
           style={{ transform: `translate(${posRef.current.x + 10}px, ${posRef.current.y + 10}px)` }}>
-          <div className={`drag-ghost__card ${STATUS[dragAppt.status][1]}`}>
+          <div className={`drag-ghost__card ${STATUS_TONE[dragAppt.status]}`}>
             {format(new Date(dragAppt.scheduledAt), 'HH:mm')} · {dragAppt.patient.name}
           </div>
         </div>
       )}
 
       {/* เพิ่มห้องแบบเร็ว */}
-      <Modal open={roomOpen} onClose={() => setRoomOpen(false)} title="เพิ่มห้อง">
+      <Modal open={roomOpen} onClose={() => setRoomOpen(false)} title={t('appointments.addRoom')}>
         <form onSubmit={addRoom} className="stack">
-          <Field label="ชื่อห้อง *"><input required autoFocus className="input" placeholder="เช่น ห้องตรวจ 3" value={roomName} onChange={e => setRoomName(e.target.value)} /></Field>
-          <p className="tiny muted">จัดการห้องทั้งหมด (แก้ไข/ลบ) ได้ที่ <span className="medium">ข้อมูลหลัก → ห้อง</span></p>
+          <Field label={t('appointments.roomName')}><input required autoFocus className="input" placeholder={t('appointments.roomNamePlaceholder')} value={roomName} onChange={e => setRoomName(e.target.value)} /></Field>
+          <p className="tiny muted">{t('appointments.manageRoomsHint', { menu: t('appointments.masterRooms') })}</p>
           <div className="form-actions">
-            <Btn type="button" variant="ghost" className="btn--grow" onClick={() => setRoomOpen(false)}>ยกเลิก</Btn>
-            <Btn type="submit" className="btn--grow">เพิ่มห้อง</Btn>
+            <Btn type="button" variant="ghost" className="btn--grow" onClick={() => setRoomOpen(false)}>{t('common.cancel')}</Btn>
+            <Btn type="submit" className="btn--grow">{t('appointments.addRoom')}</Btn>
           </div>
         </form>
       </Modal>
 
-      <Modal open={open} onClose={closeModal} title={editId ? 'แก้ไขนัดหมาย' : 'สร้างนัดหมาย'}>
+      <Modal open={open} onClose={closeModal} title={editId ? t('appointments.editTitle') : t('appointments.newTitle')}>
         <form onSubmit={save} className="stack">
-          <Field label="คนไข้ *">
+          <Field label={t('appointments.patient')}>
             <select required disabled={!!editId} className="input" value={form.patientId} onChange={set('patientId')}>
-              <option value="">เลือกคนไข้...</option>
+              <option value="">{t('appointments.selectPatient')}</option>
               {patients.map(p => <option key={p.id} value={p.id}>{p.name} ({p.hn})</option>)}
             </select>
           </Field>
           <div className="form-grid">
-            <Field label="ห้อง">
+            <Field label={t('appointments.room')}>
               <select className="input" value={form.roomId} onChange={set('roomId')}>
-                <option value="">ยังไม่จัดห้อง</option>
+                <option value="">{t('appointments.unassignedRoom')}</option>
                 {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </Field>
-            <Field label="บริการ">
+            <Field label={t('appointments.service')}>
               <select className="input" value={form.serviceId} onChange={set('serviceId')}>
-                <option value="">ไม่ระบุ</option>
+                <option value="">{t('common.unspecified')}</option>
                 {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </Field>
           </div>
           <div className="form-grid">
-            <Field label="แพทย์">
+            <Field label={t('appointments.doctor')}>
               <select className="input" value={form.doctorId} onChange={set('doctorId')}>
-                <option value="">ไม่ระบุ</option>
+                <option value="">{t('common.unspecified')}</option>
                 {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
             </Field>
-            <Field label="ผู้ช่วยแพทย์">
+            <Field label={t('appointments.assistant')}>
               <select className="input" value={form.assistantId} onChange={set('assistantId')}>
-                <option value="">ไม่ระบุ</option>
+                <option value="">{t('common.unspecified')}</option>
                 {assistants.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
             </Field>
           </div>
-          <Field label="วันเวลาเริ่ม *">
+          <Field label={t('appointments.startAt')}>
             <input type="datetime-local" required className="input" value={form.scheduledAt} onChange={set('scheduledAt')} />
           </Field>
           <div className="form-grid">
-            <Field label="ระยะเวลา">
+            <Field label={t('appointments.duration')}>
               <select className="input" value={form.durationMin} onChange={set('durationMin')}>
-                {DURATIONS.map(m => <option key={m} value={m}>{m} นาที</option>)}
+                {DURATIONS.map(m => <option key={m} value={m}>{t('appointments.minutes', { n: m })}</option>)}
               </select>
             </Field>
-            <Field label="แผนก">
+            <Field label={t('appointments.department')}>
               <select className="input" value={form.departmentId} onChange={set('departmentId')}>
-                <option value="">ไม่ระบุ</option>
+                <option value="">{t('common.unspecified')}</option>
                 {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
             </Field>
           </div>
-          {endHint && <p className="tiny text-brand">ช่วงเวลา {endHint}</p>}
+          {endHint && <p className="tiny text-brand">{t('appointments.rangeHint', { range: endHint })}</p>}
           {formConflict && (
             <div className="alert alert--sm tone-red">
               <AlertTriangle size={14} className="alert__icon" />
-              <span>ห้องนี้มีนัดของ <b>{formConflict.patient.name}</b> เวลา {format(new Date(formConflict.scheduledAt), 'HH:mm')} อยู่แล้ว — จองซ้อนได้ แต่จะถามยืนยันก่อนบันทึก</span>
+              <span>{t('appointments.conflictInline', { name: formConflict.patient.name, time: format(new Date(formConflict.scheduledAt), 'HH:mm') })}</span>
             </div>
           )}
           {editId && (
-            <Field label="สถานะ">
+            <Field label={t('appointments.status')}>
               <select className="input" value={form.status} onChange={set('status')}>
-                {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v[0]}</option>)}
+                {Object.keys(STATUS_TONE).map(k => <option key={k} value={k}>{t(`enum.apptStatus.${k}`)}</option>)}
               </select>
             </Field>
           )}
-          <Field label="หมายเหตุ"><textarea rows={2} className="input" value={form.note} onChange={set('note')} /></Field>
+          <Field label={t('appointments.note')}><textarea rows={2} className="input" value={form.note} onChange={set('note')} /></Field>
           <div className="form-actions">
-            {editId && <Btn type="button" variant="danger" onClick={() => cancelById(editId)}><Trash2 size={13} /> ยกเลิกนัด</Btn>}
-            <Btn type="button" variant="ghost" className="btn--grow" onClick={closeModal}>ปิด</Btn>
-            <Btn type="submit" disabled={saving} className="btn--grow">{saving ? 'กำลังบันทึก...' : editId ? 'บันทึกการแก้ไข' : 'บันทึกนัด'}</Btn>
+            {editId && <Btn type="button" variant="danger" onClick={() => cancelById(editId)}><Trash2 size={13} /> {t('appointments.cancelAppt')}</Btn>}
+            <Btn type="button" variant="ghost" className="btn--grow" onClick={closeModal}>{t('common.close')}</Btn>
+            <Btn type="submit" disabled={saving} className="btn--grow">{saving ? t('common.saving') : editId ? t('appointments.saveEdit') : t('appointments.saveNew')}</Btn>
           </div>
         </form>
       </Modal>

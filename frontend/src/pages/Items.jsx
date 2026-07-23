@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Plus, Pencil, Trash2, Search, Package } from 'lucide-react'
 import api from '../lib/api'
+import { useT } from '../lib/i18n'
 import { canManage } from '../lib/auth'
 import { PageHeader, Btn, Modal, Field, Card } from '../components/ui'
 
@@ -8,6 +9,7 @@ const EMPTY = { name: '', categoryId: '', unitId: '', price: '', cost: '', stock
 
 export default function Items() {
   const manage = canManage()
+  const { t } = useT()
   const [items, setItems] = useState([])
   const [cats, setCats] = useState([])
   const [units, setUnits] = useState([])
@@ -21,8 +23,9 @@ export default function Items() {
   const fetch = () => api.get('/items').then(r => setItems(r.data))
   useEffect(() => {
     fetch()
-    api.get('/master/categories').then(r => setCats(r.data))
-    api.get('/master/units').then(r => setUnits(r.data))
+    // ช่องเลือกเอาเฉพาะ master ที่ยังเปิดใช้งาน
+    api.get('/master/categories?activeOnly=1').then(r => setCats(r.data))
+    api.get('/master/units?activeOnly=1').then(r => setUnits(r.data))
   }, [])
 
   function openNew() { setEditId(null); setForm(EMPTY); setOpen(true) }
@@ -38,19 +41,19 @@ export default function Items() {
       setOpen(false); fetch()
     } finally { setSaving(false) }
   }
-  async function remove(id) { if (confirm('ลบรายการนี้?')) { await api.delete(`/items/${id}`); fetch() } }
+  async function remove(id) { if (confirm(t('common.deleteConfirm'))) { await api.delete(`/items/${id}`); fetch() } }
 
   const filtered = items.filter(i => i.name.toLowerCase().includes(search.toLowerCase()) || i.code.toLowerCase().includes(search.toLowerCase()))
 
   return (
     <div className="page">
-      <PageHeader title="สินค้า" subtitle={`${items.length} รายการ`}>
-        {manage && <Btn onClick={openNew}><Plus size={14} /> เพิ่มสินค้า</Btn>}
+      <PageHeader title={t('items.title')} subtitle={t('items.count', { n: items.length })}>
+        {manage && <Btn onClick={openNew}><Plus size={14} /> {t('items.add')}</Btn>}
       </PageHeader>
 
       <div className="search mb-16">
         <Search size={16} className="search__icon" />
-        <input className="input" placeholder="ค้นหาชื่อ, รหัส..." value={search} onChange={e => setSearch(e.target.value)} />
+        <input className="input" placeholder={t('items.searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
       <Card className="card--clip">
@@ -58,10 +61,10 @@ export default function Items() {
           <table className="table table--hover">
             <thead>
               <tr>
-                <th>รหัส/ชื่อ</th>
-                <th>หมวด</th>
-                <th className="right">ราคา</th>
-                <th className="right">คงเหลือ</th>
+                <th>{t('items.codeName')}</th>
+                <th>{t('items.category')}</th>
+                <th className="right">{t('items.price')}</th>
+                <th className="right">{t('items.stock')}</th>
                 {manage && <th></th>}
               </tr>
             </thead>
@@ -73,7 +76,7 @@ export default function Items() {
                     <p className="tiny muted">{i.code}</p>
                   </td>
                   <td className="muted">{i.category?.name || '-'}</td>
-                  <td className="right">฿{i.price.toLocaleString()}</td>
+                  <td className="right">{t('common.baht')}{i.price.toLocaleString()}</td>
                   <td className="right">
                     <span className={i.stockQty <= 0 ? 'text-danger' : undefined}>
                       {i.stockQty}{i.unit ? ` ${i.unit.name}` : ''}
@@ -88,36 +91,36 @@ export default function Items() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={5} className="table__empty"><Package size={28} />ยังไม่มีสินค้า</td></tr>
+                <tr><td colSpan={5} className="table__empty"><Package size={28} />{t('items.empty')}</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </Card>
 
-      <Modal open={open} onClose={() => setOpen(false)} title={editId ? 'แก้ไขสินค้า' : 'เพิ่มสินค้า'}>
+      <Modal open={open} onClose={() => setOpen(false)} title={editId ? t('items.editTitle') : t('items.addTitle')}>
         <form onSubmit={save} className="stack">
-          <Field label="ชื่อสินค้า *"><input required className="input" value={form.name} onChange={set('name')} /></Field>
+          <Field label={t('items.name')}><input required className="input" value={form.name} onChange={set('name')} /></Field>
           <div className="form-grid">
-            <Field label="หมวดหมู่">
+            <Field label={t('items.categoryField')}>
               <select className="input" value={form.categoryId} onChange={set('categoryId')}>
-                <option value="">ไม่ระบุ</option>{cats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                <option value="">{t('common.unspecified')}</option>{cats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </Field>
-            <Field label="หน่วย">
+            <Field label={t('items.unit')}>
               <select className="input" value={form.unitId} onChange={set('unitId')}>
-                <option value="">ไม่ระบุ</option>{units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                <option value="">{t('common.unspecified')}</option>{units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </Field>
           </div>
           <div className="form-grid form-grid--3">
-            <Field label="ราคาขาย"><input type="number" className="input" value={form.price} onChange={set('price')} /></Field>
-            <Field label="ทุน"><input type="number" className="input" value={form.cost} onChange={set('cost')} /></Field>
-            <Field label="คงเหลือ"><input type="number" className="input" value={form.stockQty} onChange={set('stockQty')} /></Field>
+            <Field label={t('items.sellPrice')}><input type="number" className="input" value={form.price} onChange={set('price')} /></Field>
+            <Field label={t('items.cost')}><input type="number" className="input" value={form.cost} onChange={set('cost')} /></Field>
+            <Field label={t('items.stock')}><input type="number" className="input" value={form.stockQty} onChange={set('stockQty')} /></Field>
           </div>
           <div className="form-actions">
-            <Btn type="button" variant="ghost" className="btn--grow" onClick={() => setOpen(false)}>ยกเลิก</Btn>
-            <Btn type="submit" disabled={saving} className="btn--grow">{saving ? 'กำลังบันทึก...' : 'บันทึก'}</Btn>
+            <Btn type="button" variant="ghost" className="btn--grow" onClick={() => setOpen(false)}>{t('common.cancel')}</Btn>
+            <Btn type="submit" disabled={saving} className="btn--grow">{saving ? t('common.saving') : t('common.save')}</Btn>
           </div>
         </form>
       </Modal>

@@ -1,21 +1,23 @@
 import { useEffect, useState } from 'react'
 import { Plus, Pencil, X, Shield, Stethoscope, HeartHandshake, UserCog, Crown } from 'lucide-react'
 import api from '../lib/api'
+import { useT } from '../lib/i18n'
 import { canManage } from '../lib/auth'
 import { PageHeader, Btn, Modal, Field, Empty, Badge } from '../components/ui'
 
 const ROLES = {
-  MASTER: { label: 'Master', icon: Crown, tone: 'purple' },
-  ADMIN: { label: 'ผู้ดูแล', icon: Shield, tone: 'gray' },
-  DOCTOR: { label: 'แพทย์', icon: Stethoscope, tone: 'brand' },
-  ASSISTANT: { label: 'ผู้ช่วยแพทย์', icon: HeartHandshake, tone: 'purple' },
-  EMPLOYEE: { label: 'พนักงาน', icon: UserCog, tone: 'blue' },
+  MASTER: { icon: Crown, tone: 'purple' },
+  ADMIN: { icon: Shield, tone: 'gray' },
+  DOCTOR: { icon: Stethoscope, tone: 'brand' },
+  ASSISTANT: { icon: HeartHandshake, tone: 'purple' },
+  EMPLOYEE: { icon: UserCog, tone: 'blue' },
 }
 const TABS = ['ALL', 'DOCTOR', 'ASSISTANT', 'EMPLOYEE', 'ADMIN', 'MASTER']
 const EMPTY = { name: '', email: '', password: '', role: 'EMPLOYEE', phone: '', position: '', specialty: '', licenseNo: '', departmentId: '' }
 
 export default function Employees() {
   const manage = canManage()
+  const { t } = useT()
   const [people, setPeople] = useState([])
   const [departments, setDepartments] = useState([])
   const [tab, setTab] = useState('ALL')
@@ -27,7 +29,8 @@ export default function Employees() {
 
   const set = f => e => setForm(p => ({ ...p, [f]: e.target.value }))
   const fetch = () => api.get('/employees').then(r => setPeople(r.data))
-  useEffect(() => { fetch(); api.get('/master/departments').then(r => setDepartments(r.data)) }, [])
+  // ช่องเลือกแผนกเอาเฉพาะที่ยังเปิดใช้งาน
+  useEffect(() => { fetch(); api.get('/master/departments?activeOnly=1').then(r => setDepartments(r.data)) }, [])
 
   function openNew() { setEditId(null); setForm(EMPTY); setErr(''); setOpen(true) }
   function openEdit(u) {
@@ -41,10 +44,10 @@ export default function Employees() {
       if (editId) await api.put(`/employees/${editId}`, form)
       else await api.post('/employees', form)
       setOpen(false); fetch()
-    } catch (e) { setErr(e.response?.data?.error || 'บันทึกไม่สำเร็จ') } finally { setSaving(false) }
+    } catch (e) { setErr(e.response?.data?.error || t('employees.saveFailed')) } finally { setSaving(false) }
   }
   async function deactivate(id) {
-    if (!confirm('ปิดการใช้งานบุคลากรคนนี้?')) return
+    if (!confirm(t('employees.deactivateConfirm'))) return
     await api.delete(`/employees/${id}`); fetch()
   }
 
@@ -52,14 +55,14 @@ export default function Employees() {
 
   return (
     <div className="page">
-      <PageHeader title="บุคลากร" subtitle={`${people.length} คน`}>
-        {manage && <Btn onClick={openNew}><Plus size={14} /> เพิ่มบุคลากร</Btn>}
+      <PageHeader title={t('employees.title')} subtitle={t('employees.count', { n: people.length })}>
+        {manage && <Btn onClick={openNew}><Plus size={14} /> {t('employees.add')}</Btn>}
       </PageHeader>
 
       <div className="tabs">
-        {TABS.map(t => (
-          <button key={t} onClick={() => setTab(t)} className={`tab${tab === t ? ' is-active' : ''}`}>
-            {t === 'ALL' ? 'ทั้งหมด' : ROLES[t].label}
+        {TABS.map(k => (
+          <button key={k} onClick={() => setTab(k)} className={`tab${tab === k ? ' is-active' : ''}`}>
+            {k === 'ALL' ? t('common.all') : t(`enum.role.${k}`)}
           </button>
         ))}
       </div>
@@ -72,10 +75,10 @@ export default function Employees() {
               <div className="person__icon"><Icon size={18} /></div>
               <div className="grow-min">
                 <p className="person__name">
-                  {u.name} {!u.active && <Badge tone="gray">ปิด</Badge>}
+                  {u.name} {!u.active && <Badge tone="gray">{t('employees.disabledTag')}</Badge>}
                 </p>
-                <p className="person__meta">{u.code} · {r.label}{u.department ? ` · ${u.department.name}` : ''}</p>
-                {u.specialty && <p className="person__meta">เชี่ยวชาญ: {u.specialty}{u.licenseNo ? ` · ${u.licenseNo}` : ''}</p>}
+                <p className="person__meta">{u.code} · {t(`enum.role.${u.role}`)}{u.department ? ` · ${u.department.name}` : ''}</p>
+                {u.specialty && <p className="person__meta">{t('employees.specialtyLine', { text: u.specialty })}{u.licenseNo ? ` · ${u.licenseNo}` : ''}</p>}
                 <p className="person__meta mt-4">{u.email}{u.phone ? ` · ${u.phone}` : ''}</p>
               </div>
               {manage && (
@@ -87,44 +90,45 @@ export default function Employees() {
             </div>
           )
         })}
-        {list.length === 0 && <div className="people-grid__wide"><Empty>ไม่มีบุคลากรในกลุ่มนี้</Empty></div>}
+        {list.length === 0 && <div className="people-grid__wide"><Empty>{t('employees.noneInGroup')}</Empty></div>}
       </div>
 
-      <Modal open={open} onClose={() => setOpen(false)} title={editId ? 'แก้ไขบุคลากร' : 'เพิ่มบุคลากร'}>
+      <Modal open={open} onClose={() => setOpen(false)} title={editId ? t('employees.editTitle') : t('employees.addTitle')}>
         <form onSubmit={save} className="stack">
-          <Field label="ชื่อ-นามสกุล *"><input required className="input" value={form.name} onChange={set('name')} /></Field>
+          <Field label={t('employees.name')}><input required className="input" value={form.name} onChange={set('name')} /></Field>
           <div className="form-grid">
-            <Field label="บทบาท">
+            <Field label={t('employees.role')}>
               <select className="input" value={form.role} onChange={set('role')}>
-                <option value="DOCTOR">แพทย์</option><option value="ASSISTANT">ผู้ช่วยแพทย์</option>
-                <option value="EMPLOYEE">พนักงาน</option><option value="ADMIN">ผู้ดูแล</option><option value="MASTER">Master</option>
+                {['DOCTOR', 'ASSISTANT', 'EMPLOYEE', 'ADMIN', 'MASTER'].map(r => (
+                  <option key={r} value={r}>{t(`enum.role.${r}`)}</option>
+                ))}
               </select>
             </Field>
-            <Field label="แผนก">
+            <Field label={t('employees.department')}>
               <select className="input" value={form.departmentId} onChange={set('departmentId')}>
-                <option value="">ไม่ระบุ</option>
+                <option value="">{t('common.unspecified')}</option>
                 {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
             </Field>
           </div>
           <div className="form-grid">
-            <Field label="เบอร์โทร"><input className="input" value={form.phone} onChange={set('phone')} /></Field>
-            <Field label="ตำแหน่ง"><input className="input" value={form.position} onChange={set('position')} /></Field>
+            <Field label={t('employees.phone')}><input className="input" value={form.phone} onChange={set('phone')} /></Field>
+            <Field label={t('employees.position')}><input className="input" value={form.position} onChange={set('position')} /></Field>
           </div>
           {(form.role === 'DOCTOR' || form.role === 'ASSISTANT') && (
             <div className="form-grid">
-              <Field label="ความเชี่ยวชาญ"><input className="input" value={form.specialty} onChange={set('specialty')} /></Field>
-              <Field label="เลขใบประกอบฯ"><input className="input" value={form.licenseNo} onChange={set('licenseNo')} /></Field>
+              <Field label={t('employees.specialty')}><input className="input" value={form.specialty} onChange={set('specialty')} /></Field>
+              <Field label={t('employees.licenseNo')}><input className="input" value={form.licenseNo} onChange={set('licenseNo')} /></Field>
             </div>
           )}
-          <Field label={`อีเมล (ใช้เข้าระบบ) ${editId ? '' : '*'}`}>
+          <Field label={t('employees.email', { required: editId ? '' : '*' })}>
             <input type="email" required={!editId} disabled={!!editId} className="input" value={form.email} onChange={set('email')} />
           </Field>
-          {!editId && <Field label="รหัสผ่าน (เว้นว่าง = clinic123)"><input type="text" className="input" value={form.password} onChange={set('password')} placeholder="clinic123" /></Field>}
+          {!editId && <Field label={t('employees.password')}><input type="text" className="input" value={form.password} onChange={set('password')} placeholder="clinic123" /></Field>}
           {err && <p className="small text-danger">{err}</p>}
           <div className="form-actions">
-            <Btn type="button" variant="ghost" className="btn--grow" onClick={() => setOpen(false)}>ยกเลิก</Btn>
-            <Btn type="submit" disabled={saving} className="btn--grow">{saving ? 'กำลังบันทึก...' : 'บันทึก'}</Btn>
+            <Btn type="button" variant="ghost" className="btn--grow" onClick={() => setOpen(false)}>{t('common.cancel')}</Btn>
+            <Btn type="submit" disabled={saving} className="btn--grow">{saving ? t('common.saving') : t('common.save')}</Btn>
           </div>
         </form>
       </Modal>

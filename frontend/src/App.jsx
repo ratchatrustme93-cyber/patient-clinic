@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { isLoggedIn } from './lib/auth'
+import { I18nProvider } from './lib/i18n'
 import { VoiceRecorderProvider } from './components/VoiceRecorder'
 import Layout from './components/Layout'
 import Login from './pages/Login'
@@ -20,6 +21,7 @@ function Private({ children }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <I18nProvider>
       <VoiceRecorderProvider>
       <Routes>
         <Route path="/login" element={<Login />} />
@@ -47,6 +49,7 @@ export default function App() {
         />
       </Routes>
       </VoiceRecorderProvider>
+      </I18nProvider>
     </BrowserRouter>
   )
 }

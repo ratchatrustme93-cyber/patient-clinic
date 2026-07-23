@@ -1,12 +1,14 @@
 import { Router } from 'express'
 import prisma from '../lib/prisma.js'
 import { auth } from '../middleware/auth.js'
+import { msg } from '../lib/messages.js'
+import { PATIENT_BRIEF, canAccessPatient } from '../lib/patientAccess.js'
 
 const router = Router()
 const num = v => (v === '' || v == null ? null : +v)
 
 const INCLUDE = {
-  patient: true,
+  patient: PATIENT_BRIEF, // เดิม `patient: true` → คืนคนไข้ทั้งแถวติดมากับทุก visit
   doctor: { select: { id: true, name: true, specialty: true } },
   appointment: { include: { service: true, department: true } },
   bill: true,
@@ -21,9 +23,16 @@ router.get('/', auth, async (req, res) => {
 })
 
 // GET /api/visits/:id — ใบรายงานคนไข้ (patient report)
+// เดิมไม่มีเช็คสิทธิ์เลย → ใครก็ไล่ id ดูผลวินิจฉัย + ข้อมูลคนไข้ได้ทุกคน
 router.get('/:id', auth, async (req, res) => {
   const visit = await prisma.visit.findUnique({ where: { id: +req.params.id }, include: INCLUDE })
-  if (!visit) return res.status(404).json({ error: 'Not found' })
+  if (!visit) return res.status(404).json({ error: msg(req, 'NOT_FOUND') })
+  if (req.user.role === 'DOCTOR' && visit.doctorId !== req.user.id) {
+    return res.status(403).json({ error: msg(req, 'VISIT_FORBIDDEN') })
+  }
+  if (!(await canAccessPatient(req.user, visit.patientId))) {
+    return res.status(403).json({ error: msg(req, 'PATIENT_FORBIDDEN') })
+  }
   res.json(visit)
 })
 

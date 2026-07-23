@@ -83,20 +83,23 @@ model Department {
 model Unit {
   id        Int        @id @default(autoincrement())
   name      String     @unique
+  active    Boolean    @default(true)
   items     Item[]
   materials Material[]
 }
 
 model ItemCategory {
-  id    Int    @id @default(autoincrement())
-  name  String @unique
-  items Item[]
+  id     Int     @id @default(autoincrement())
+  name   String  @unique
+  active Boolean @default(true)
+  items  Item[]
 }
 
 model PaymentMethod {
-  id    Int    @id @default(autoincrement())
-  name  String @unique
-  bills Bill[]
+  id     Int     @id @default(autoincrement())
+  name   String  @unique
+  active Boolean @default(true)
+  bills  Bill[]
 }
 
 model Room {
@@ -182,9 +185,18 @@ model Patient {
   note          String?
   createdAt     DateTime  @default(now())
 
+  // ── blind index ──
+  // ฟิลด์ที่เข้ารหัสค้นหาตรง ๆ ไม่ได้ (ciphertext ต่างกันทุกครั้งเพราะ IV สุ่ม)
+  // จึงเก็บ HMAC ไว้ค้นแบบ "ตรงกันเป๊ะ" · src/lib/prisma.js เขียนให้อัตโนมัติตอนบันทึก
+  phoneIdx      String?   // HMAC ของเบอร์โทร (เฉพาะตัวเลข)
+  nationalIdIdx String?   // HMAC ของเลขบัตรประชาชน — ไว้กันคนไข้ซ้ำ
+
   appointments Appointment[]
   visits       Visit[]
   bills        Bill[]
+
+  @@index([phoneIdx])
+  @@index([nationalIdIdx])
 }
 
 // ── Appointment schedule ──

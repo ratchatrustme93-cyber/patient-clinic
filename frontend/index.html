@@ -10,6 +10,8 @@
       try {
         var t = localStorage.getItem('pc.theme')
         if (t === 'classic') document.documentElement.dataset.theme = t
+        var l = localStorage.getItem('pc.lang')
+        document.documentElement.lang = l === 'en' ? 'en' : 'th'
       } catch (e) {}
     </script>
   </head>

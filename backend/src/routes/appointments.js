@@ -1,12 +1,15 @@
 import { Router } from 'express'
 import prisma from '../lib/prisma.js'
 import { auth } from '../middleware/auth.js'
+import { PATIENT_BRIEF } from '../lib/patientAccess.js'
 
 const router = Router()
 const num = v => (v === '' || v == null ? null : +v)
 
 const INCLUDE = {
-  patient: true,
+  // เดิมเป็น `patient: true` — หน้าตารางนัดโหลดคนไข้ทั้งแถว (เลขบัตร ที่อยู่ ประวัติแพ้ยา)
+  // ของทุกนัดในวันนั้น ทั้งที่ UI ใช้แค่ชื่อ
+  patient: PATIENT_BRIEF,
   doctor: { select: { id: true, name: true } },
   assistant: { select: { id: true, name: true } },
   department: true,

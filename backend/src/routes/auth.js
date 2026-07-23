@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken'
 import prisma from '../lib/prisma.js'
 import { nextCode } from '../lib/codes.js'
 import { auth } from '../middleware/auth.js'
+import { msg } from '../lib/messages.js'
 
 const router = Router()
 
@@ -26,16 +27,16 @@ router.post('/register', async (req, res) => {
     })
     res.json({ token: sign(user), user: pub(user) })
   } catch (e) {
-    res.status(400).json({ error: e.code === 'P2002' ? 'อีเมลนี้มีอยู่แล้ว' : e.message })
+    res.status(400).json({ error: e.code === 'P2002' ? msg(req, 'EMAIL_TAKEN') : e.message })
   }
 })
 
 router.post('/login', async (req, res) => {
   const { email, password } = req.body
   const user = await prisma.user.findUnique({ where: { email } })
-  if (!user || !user.active) return res.status(401).json({ error: 'บัญชีไม่ถูกต้องหรือถูกปิดใช้งาน' })
+  if (!user || !user.active) return res.status(401).json({ error: msg(req, 'ACCOUNT_INVALID') })
   const ok = await bcrypt.compare(password, user.password)
-  if (!ok) return res.status(401).json({ error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' })
+  if (!ok) return res.status(401).json({ error: msg(req, 'LOGIN_FAILED') })
   res.json({ token: sign(user), user: pub(user) })
 })
 

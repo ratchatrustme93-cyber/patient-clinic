@@ -2,6 +2,8 @@ import { Router } from 'express'
 import prisma from '../lib/prisma.js'
 import { nextCode } from '../lib/codes.js'
 import { auth, requireRole } from '../middleware/auth.js'
+import { msg } from '../lib/messages.js'
+import { PATIENT_BRIEF, canAccessPatient } from '../lib/patientAccess.js'
 
 const router = Router()
 
@@ -42,9 +44,12 @@ router.get('/', auth, async (req, res) => {
 router.get('/:id', auth, async (req, res) => {
   const bill = await prisma.bill.findUnique({
     where: { id: +req.params.id },
-    include: { patient: true, paymentMethod: true, items: true, visit: true },
+    include: { patient: PATIENT_BRIEF, paymentMethod: true, items: true, visit: true },
   })
-  if (!bill) return res.status(404).json({ error: 'Not found' })
+  if (!bill) return res.status(404).json({ error: msg(req, 'NOT_FOUND') })
+  if (!(await canAccessPatient(req.user, bill.patientId))) {
+    return res.status(403).json({ error: msg(req, 'BILL_FORBIDDEN') })
+  }
   res.json(bill)
 })
 
@@ -62,7 +67,7 @@ router.post('/', auth, async (req, res) => {
       note,
       items: { create: lines },
     },
-    include: { patient: true, items: true },
+    include: { patient: PATIENT_BRIEF, items: true },
   })
   res.json(bill)
 })
@@ -77,7 +82,7 @@ router.put('/:id', auth, async (req, res) => {
     return tx.bill.update({
       where: { id },
       data: { discount: +discount || 0, subtotal, total, note, items: { create: lines } },
-      include: { patient: true, items: true },
+      include: { patient: PATIENT_BRIEF, items: true },
     })
   })
   res.json(bill)

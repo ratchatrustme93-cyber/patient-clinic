@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import prisma from '../lib/prisma.js'
 import { nextCode } from '../lib/codes.js'
 import { auth, requireRole } from '../middleware/auth.js'
+import { msg } from '../lib/messages.js'
 
 const router = Router()
 const SELECT = {
@@ -37,7 +38,7 @@ router.post('/', auth, requireRole('ADMIN'), async (req, res) => {
     })
     res.json(user)
   } catch (e) {
-    res.status(400).json({ error: e.code === 'P2002' ? 'อีเมลนี้มีอยู่แล้ว' : e.message })
+    res.status(400).json({ error: e.code === 'P2002' ? msg(req, 'EMAIL_TAKEN') : e.message })
   }
 })
 
